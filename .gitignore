@@ -1,1 +1,37 @@
-node_modules
+# Node & Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js Build
+.next/
+*/.next/
+out/
+
+# Vite / Build Distribution
+dist/
+*/dist/
+
+# Go Executables & Binaries
+bin/
+*/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Environment Variables & Local Secrets
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
