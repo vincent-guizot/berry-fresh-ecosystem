@@ -1,0 +1,26 @@
+[
+  {
+    "id": "90000000-0000-0000-0000-000000000001",
+    "supplier_id": "80000000-0000-0000-0000-000000000001",
+    "name": "Ciwidey Highland Farm Plot 3",
+    "region": "Bandung Selatan",
+    "altitude_meters": 1450,
+    "certification": "GlobalG.A.P"
+  },
+  {
+    "id": "90000000-0000-0000-0000-000000000002",
+    "supplier_id": "80000000-0000-0000-0000-000000000002",
+    "name": "Lembang Sunrise Farm",
+    "region": "Bandung Utara",
+    "altitude_meters": 1300,
+    "certification": "Organik Indonesia"
+  },
+  {
+    "id": "90000000-0000-0000-0000-000000000003",
+    "supplier_id": "80000000-0000-0000-0000-000000000003",
+    "name": "Batu Highland Agro",
+    "region": "Jawa Timur",
+    "altitude_meters": 1200,
+    "certification": "GlobalG.A.P"
+  }
+]

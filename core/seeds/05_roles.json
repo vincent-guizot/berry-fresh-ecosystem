@@ -1,0 +1,9 @@
+[
+  { "code": "OWNER", "name": "Business Owner", "description": "Full access to enterprise governance and financials" },
+  { "code": "ADMIN", "name": "System Administrator", "description": "Global administration and configuration" },
+  { "code": "MANAGER", "name": "Store & Hub Manager", "description": "Shift approvals and inventory reconciliation" },
+  { "code": "WAREHOUSE", "name": "Warehouse & Cold Storage Staff", "description": "Receiving, FEFO picking, and adjustments" },
+  { "code": "CASHIER", "name": "Retail Store Cashier", "description": "POS sales, till floats, and shift reconciliation" },
+  { "code": "FARMER", "name": "Contract Grower / Farmer", "description": "Harvest yield logging and lot tracking" },
+  { "code": "CUSTOMER", "name": "Retail / Online Customer", "description": "E-Commerce orders and loyalty" }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "d0000000-0000-0000-0000-000000000001",
+    "store_id": "c0000000-0000-0000-0000-000000000001",
+    "terminal_code": "POS-REG-01",
+    "name": "Register 01 (Main POS)",
+    "is_active": true
+  },
+  {
+    "id": "d0000000-0000-0000-0000-000000000002",
+    "store_id": "c0000000-0000-0000-0000-000000000001",
+    "terminal_code": "POS-REG-02",
+    "name": "Register 02 (Express)",
+    "is_active": true
+  }
+]

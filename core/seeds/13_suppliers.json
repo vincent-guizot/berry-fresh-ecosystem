@@ -1,0 +1,32 @@
+[
+  {
+    "id": "80000000-0000-0000-0000-000000000001",
+    "code": "SUP-CWD-01",
+    "company_name": "PT Ciwidey Agro Nusantara",
+    "contact_name": "Agus Hendra",
+    "email": "agus@ciwideyagro.id",
+    "phone": "08123450001",
+    "city": "Bandung",
+    "rating": 4.90
+  },
+  {
+    "id": "80000000-0000-0000-0000-000000000002",
+    "code": "SUP-LMB-01",
+    "company_name": "CV Lembang Highland Fruit",
+    "contact_name": "Wawan Setiawan",
+    "email": "wawan@lembangfruit.id",
+    "phone": "08123450002",
+    "city": "Lembang",
+    "rating": 4.85
+  },
+  {
+    "id": "80000000-0000-0000-0000-000000000003",
+    "code": "SUP-BATU-01",
+    "company_name": "Kelompok Tani Batu Organik",
+    "contact_name": "Supriyadi",
+    "email": "supri@batuagro.id",
+    "phone": "08123450003",
+    "city": "Batu",
+    "rating": 4.95
+  }
+]

@@ -1,0 +1,9 @@
+[
+  { "id": "60000000-0000-0000-0000-000000000001", "code": "KG", "name": "Kilogram", "symbol": "kg", "uom_type": "WEIGHT", "conversion_factor_to_base": 1.0 },
+  { "id": "60000000-0000-0000-0000-000000000002", "code": "GRAM", "name": "Gram", "symbol": "g", "uom_type": "WEIGHT", "conversion_factor_to_base": 0.001 },
+  { "id": "60000000-0000-0000-0000-000000000003", "code": "PUNNET_125", "name": "125g Clamshell Punnet", "symbol": "125g", "uom_type": "PIECE", "conversion_factor_to_base": 1.0 },
+  { "id": "60000000-0000-0000-0000-000000000004", "code": "PUNNET_250", "name": "250g Clamshell Punnet", "symbol": "250g", "uom_type": "PIECE", "conversion_factor_to_base": 1.0 },
+  { "id": "60000000-0000-0000-0000-000000000005", "code": "PUNNET_500", "name": "500g Family Punnet", "symbol": "500g", "uom_type": "PIECE", "conversion_factor_to_base": 1.0 },
+  { "id": "60000000-0000-0000-0000-000000000006", "code": "CRATE_5KG", "name": "5kg Harvest Bulk Crate", "symbol": "crate", "uom_type": "VOLUME", "conversion_factor_to_base": 5.0 },
+  { "id": "60000000-0000-0000-0000-000000000007", "code": "PIECE", "name": "Single Piece", "symbol": "pc", "uom_type": "PIECE", "conversion_factor_to_base": 1.0 }
+]

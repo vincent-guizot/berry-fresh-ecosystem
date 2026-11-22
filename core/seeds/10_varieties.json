@@ -1,0 +1,8 @@
+[
+  { "id": "f0000000-0000-0000-0000-000000000001", "category_code": "BERRIES", "code": "ALBION", "name": "Albion High-Sugar", "flavor_profile": "Crisp, aromatic, high sweetness Brix 9°+" },
+  { "id": "f0000000-0000-0000-0000-000000000002", "category_code": "BERRIES", "code": "SWEET_CHARLIE", "name": "Sweet Charlie", "flavor_profile": "Juicy, soft pulp, medium acidity" },
+  { "id": "f0000000-0000-0000-0000-000000000003", "category_code": "BERRIES", "code": "DUKE", "name": "Duke Super-Blue", "flavor_profile": "Plump, firm, antioxidant rich, deep indigo bloom" },
+  { "id": "f0000000-0000-0000-0000-000000000004", "category_code": "BERRIES", "code": "EMERALD", "name": "Emerald Jumbo", "flavor_profile": "Jumbo berries, super sweet, crunchy bite" },
+  { "id": "f0000000-0000-0000-0000-000000000005", "category_code": "BERRIES", "code": "HERITAGE", "name": "Heritage Royal", "flavor_profile": "Delicate ruby red, aromatic aroma, pleasant tartness" },
+  { "id": "f0000000-0000-0000-0000-000000000006", "category_code": "BERRIES", "code": "PRIME_ARK", "name": "Prime-Ark Freedom", "flavor_profile": "Thornless cultivar, robust blackberry flavor, juicy" }
+]

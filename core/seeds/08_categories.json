@@ -1,0 +1,7 @@
+[
+  { "id": "70000000-0000-0000-0000-000000000001", "code": "BERRIES", "name": "Fresh Berries", "description": "Strawberries, Blueberries, Raspberries, Blackberries" },
+  { "id": "70000000-0000-0000-0000-000000000002", "code": "STONE_FRUITS", "name": "Stone Fruits", "description": "Peaches, Plums, Cherries" },
+  { "id": "70000000-0000-0000-0000-000000000003", "code": "CITRUS", "name": "Citrus", "description": "Oranges, Lemons, Limes" },
+  { "id": "70000000-0000-0000-0000-000000000004", "code": "VEGETABLES", "name": "Highland Vegetables", "description": "Lettuce, Microgreens, Baby Spinach" },
+  { "id": "70000000-0000-0000-0000-000000000005", "code": "HERBS", "name": "Fresh Culinary Herbs", "description": "Mint, Basil, Rosemary" }
+]

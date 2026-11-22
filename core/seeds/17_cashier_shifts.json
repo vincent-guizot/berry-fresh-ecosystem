@@ -1,0 +1,13 @@
+[
+  {
+    "id": "50000000-0000-0000-0000-000000000001",
+    "register_terminal_code": "POS-REG-01",
+    "cashier_email": "cashier@berryfresh.com",
+    "hours_ago": 4,
+    "opening_cash_float_cents": 200000,
+    "total_sales_count": 14,
+    "total_sales_amount_cents": 1845000,
+    "status": "OPEN",
+    "notes": "Morning Shift Store Jakarta Central"
+  }
+]

@@ -1,0 +1,13 @@
+[
+  { "product_sku": "BF-STR-ALB-250G", "channel": "ECOMMERCE", "base_price_cents": 38000, "compare_at_price_cents": 45000 },
+  { "product_sku": "BF-STR-ALB-250G", "channel": "POS", "base_price_cents": 38000, "compare_at_price_cents": 45000 },
+  { "product_sku": "BF-STR-SWC-KG", "channel": "POS", "base_price_cents": 120000, "compare_at_price_cents": 140000 },
+  { "product_sku": "BF-BLU-DUK-125G", "channel": "ECOMMERCE", "base_price_cents": 52000, "compare_at_price_cents": 60000 },
+  { "product_sku": "BF-BLU-DUK-125G", "channel": "POS", "base_price_cents": 52000, "compare_at_price_cents": 60000 },
+  { "product_sku": "BF-BLU-EME-250G", "channel": "ECOMMERCE", "base_price_cents": 85000, "compare_at_price_cents": 98000 },
+  { "product_sku": "BF-BLU-EME-250G", "channel": "POS", "base_price_cents": 85000, "compare_at_price_cents": 98000 },
+  { "product_sku": "BF-RAS-HER-125G", "channel": "ECOMMERCE", "base_price_cents": 65000, "compare_at_price_cents": 75000 },
+  { "product_sku": "BF-RAS-HER-125G", "channel": "POS", "base_price_cents": 65000, "compare_at_price_cents": 75000 },
+  { "product_sku": "BF-BLK-ARK-125G", "channel": "ECOMMERCE", "base_price_cents": 58000, "compare_at_price_cents": 68000 },
+  { "product_sku": "BF-BLK-ARK-125G", "channel": "POS", "base_price_cents": 58000, "compare_at_price_cents": 68000 }
+]

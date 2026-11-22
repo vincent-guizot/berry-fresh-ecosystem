@@ -1,0 +1,46 @@
+[
+  {
+    "id": "b0000000-0000-0000-0000-000000000001",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "code": "WH-JKT-MAIN",
+    "name": "Central Cold Storage Hub Jakarta",
+    "facility_type": "COLD_STORAGE",
+    "address": "Kawasan Pergudangan Pluit Blok C No. 8",
+    "city": "Jakarta Utara",
+    "province": "DKI Jakarta",
+    "postal_code": "14450"
+  },
+  {
+    "id": "b0000000-0000-0000-0000-000000000002",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "code": "FARM-CWD-01",
+    "name": "Ciwidey Highland Farm Plot 3",
+    "facility_type": "FARM",
+    "address": "Jl. Raya Ciwidey KM 18",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "postal_code": "40973"
+  },
+  {
+    "id": "b0000000-0000-0000-0000-000000000003",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "code": "FARM-LMB-01",
+    "name": "Lembang Sunrise Farm",
+    "facility_type": "FARM",
+    "address": "Jl. Kolonel Masturi KM 4",
+    "city": "Lembang",
+    "province": "Jawa Barat",
+    "postal_code": "40391"
+  },
+  {
+    "id": "b0000000-0000-0000-0000-000000000004",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "code": "FARM-BATU-01",
+    "name": "Batu Highland Agro",
+    "facility_type": "FARM",
+    "address": "Jl. Panderman Agro No. 12",
+    "city": "Batu",
+    "province": "Jawa Timur",
+    "postal_code": "65311"
+  }
+]
