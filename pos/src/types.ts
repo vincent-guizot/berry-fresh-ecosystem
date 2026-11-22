@@ -28,10 +28,11 @@ export interface ShiftInfo {
   id: string;
   register_id: string;
   register_code: string;
+  store_name?: string;
   cashier_name: string;
   opened_at: string;
   opening_cash_float_cents: number;
-  status: 'OPEN' | 'CLOSED';
+  status: 'OPEN' | 'CLOSED' | 'RECONCILED';
   total_transactions: number;
   total_revenue_cents: number;
 }

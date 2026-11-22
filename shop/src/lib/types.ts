@@ -10,7 +10,7 @@ export interface Product {
   image_url: string;
   shelf_life_days: number;
   storage_temp_c: number;
-  tags: string[];
+  tags?: string[];
 }
 
 export interface CartItem {

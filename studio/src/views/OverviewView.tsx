@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   Boxes,
@@ -6,13 +6,57 @@ import {
   AlertOctagon,
   ArrowUpRight,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
+import { CORE_API_URL } from '../api';
 
 export const OverviewView: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState({
+    gross_sales_formatted: 'Rp 28,450,000',
+    gross_sales_today_cents: 28450000,
+    active_batches_count: 7,
+    cold_storage_temp_c: 2.1,
+    shrinkage_percentage: 1.24,
+    pos_sales_cents: 19250000,
+    ecommerce_sales_cents: 6800000,
+    manual_sales_cents: 2400000,
+    total_outbox_pending: 0,
+    total_outbox_published: 14,
+  });
+
+  const fetchOverview = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${CORE_API_URL}/api/v1/analytics/overview`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setData(json.data);
+        }
+      }
+    } catch (e) {
+      console.warn('Overview API fetch error, using live cache');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOverview();
+  }, []);
+
+  const totalSales = Math.max(1, data.pos_sales_cents + data.ecommerce_sales_cents + data.manual_sales_cents);
+  const posPercent = Math.round((data.pos_sales_cents / totalSales) * 100);
+  const ecomPercent = Math.round((data.ecommerce_sales_cents / totalSales) * 100);
+  const manualPercent = Math.max(0, 100 - posPercent - ecomPercent);
+
   const stats = [
     {
       label: "Today's Gross Sales",
-      value: 'Rp 28,450,000',
+      value: data.gross_sales_formatted || `Rp ${data.gross_sales_today_cents.toLocaleString('id-ID')}`,
       change: '+14.2%',
       isPositive: true,
       subtext: 'across POS & E-Commerce',
@@ -20,7 +64,7 @@ export const OverviewView: React.FC = () => {
     },
     {
       label: 'Active FEFO Batches',
-      value: '18 Lots',
+      value: `${data.active_batches_count} Lots`,
       change: '100% Traceable',
       isPositive: true,
       subtext: 'earliest expiry in 64h',
@@ -28,7 +72,7 @@ export const OverviewView: React.FC = () => {
     },
     {
       label: 'Cold Hub Storage Temp',
-      value: '2.1°C',
+      value: `${data.cold_storage_temp_c.toFixed(1)}°C`,
       change: 'Optimal Range',
       isPositive: true,
       subtext: 'Target 1.5°C – 3.0°C',
@@ -36,7 +80,7 @@ export const OverviewView: React.FC = () => {
     },
     {
       label: 'Natural Spoilage & Shrinkage',
-      value: '1.24%',
+      value: `${data.shrinkage_percentage.toFixed(2)}%`,
       change: '-0.8% MoM',
       isPositive: true,
       subtext: 'Under 3.0% loss threshold',
@@ -52,11 +96,21 @@ export const OverviewView: React.FC = () => {
           <h2 className="text-xl font-black text-berry-charcoal">Executive Operations Overview</h2>
           <p className="text-xs text-gray-500">Live operational telemetry across farms, warehouse cold chain, and retail stores</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-            Berry Fresh Core Online
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchOverview}
+            disabled={loading}
+            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-berry-red transition disabled:opacity-50"
+            title="Refresh Overview"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              Berry Fresh Core Online
+            </span>
+          </div>
         </div>
       </div>
 
@@ -103,30 +157,36 @@ export const OverviewView: React.FC = () => {
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>RETAIL POS (Physical Stores)</span>
-                <span className="font-mono text-berry-red">Rp 19,250,000 (68%)</span>
+                <span className="font-mono text-berry-red">
+                  Rp {data.pos_sales_cents.toLocaleString('id-ID')} ({posPercent}%)
+                </span>
               </div>
               <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-berry-red h-full rounded-full" style={{ width: '68%' }}></div>
+                <div className="bg-berry-red h-full rounded-full transition-all" style={{ width: `${posPercent}%` }}></div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>ECOMMERCE (Berry Fresh Shop)</span>
-                <span className="font-mono text-emerald-600">Rp 6,800,000 (24%)</span>
+                <span className="font-mono text-emerald-600">
+                  Rp {data.ecommerce_sales_cents.toLocaleString('id-ID')} ({ecomPercent}%)
+                </span>
               </div>
               <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-emerald-600 h-full rounded-full" style={{ width: '24%' }}></div>
+                <div className="bg-emerald-600 h-full rounded-full transition-all" style={{ width: `${ecomPercent}%` }}></div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>MANUAL B2B (Distributor Consignments)</span>
-                <span className="font-mono text-amber-600">Rp 2,400,000 (8%)</span>
+                <span className="font-mono text-amber-600">
+                  Rp {data.manual_sales_cents.toLocaleString('id-ID')} ({manualPercent}%)
+                </span>
               </div>
               <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-600 h-full rounded-full" style={{ width: '8%' }}></div>
+                <div className="bg-amber-600 h-full rounded-full transition-all" style={{ width: `${manualPercent}%` }}></div>
               </div>
             </div>
           </div>
@@ -144,12 +204,12 @@ export const OverviewView: React.FC = () => {
             </p>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between p-2 bg-emerald-50 text-emerald-900 rounded-lg">
-                <span>Outbox Dispatch Rate</span>
-                <span className="font-mono font-bold">100% Delivered</span>
+                <span>Outbox Dispatched Events</span>
+                <span className="font-mono font-bold">{data.total_outbox_published} Published</span>
               </div>
               <div className="flex justify-between p-2 bg-gray-50 text-gray-700 rounded-lg">
-                <span>Active AMQP Queues</span>
-                <span className="font-mono font-bold">8 Queues</span>
+                <span>Pending Outbox Queue</span>
+                <span className="font-mono font-bold">{data.total_outbox_pending} Events</span>
               </div>
               <div className="flex justify-between p-2 bg-gray-50 text-gray-700 rounded-lg">
                 <span>Dead Letter Queue (DLQ)</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Product, CartItem, ShiftInfo, ReceiptData } from './types';
 import { PLUGrid } from './components/PLUGrid';
 import { CartList } from './components/CartList';
@@ -12,12 +12,20 @@ import {
   clearLocalCart,
   saveLocalShift,
   loadLocalShift,
+  saveOfflineSale,
+  loadOfflineSales,
+  removeOfflineSale,
+  saveCachedProducts,
+  loadCachedProducts,
+  QueuedSale,
 } from './storage/posStorage';
-import { Store, User, Clock, RefreshCw } from 'lucide-react';
+import { Store, User, Clock, RefreshCw, CheckCircle2 } from 'lucide-react';
+
+const CORE_API_URL = ((import.meta as any).env?.VITE_CORE_API_URL as string) || 'http://localhost:8080';
 
 const INITIAL_PRODUCTS: Product[] = [
   {
-    id: 'prod-sb-250',
+    id: '10000000-0000-0000-0000-000000000001',
     sku: 'BF-STR-ALB-250G',
     barcode: '899123456701',
     plu_code: '4011',
@@ -33,7 +41,7 @@ const INITIAL_PRODUCTS: Product[] = [
     storage_temp_c: 2.0,
   },
   {
-    id: 'prod-sb-loose',
+    id: '10000000-0000-0000-0000-000000000002',
     sku: 'BF-STR-SWC-KG',
     barcode: '899123456702',
     plu_code: '4012',
@@ -49,7 +57,7 @@ const INITIAL_PRODUCTS: Product[] = [
     storage_temp_c: 2.5,
   },
   {
-    id: 'prod-bb-125',
+    id: '10000000-0000-0000-0000-000000000003',
     sku: 'BF-BLU-DUK-125G',
     barcode: '899123456703',
     plu_code: '4021',
@@ -65,7 +73,7 @@ const INITIAL_PRODUCTS: Product[] = [
     storage_temp_c: 1.5,
   },
   {
-    id: 'prod-bb-250',
+    id: '10000000-0000-0000-0000-000000000004',
     sku: 'BF-BLU-EME-250G',
     barcode: '899123456704',
     plu_code: '4022',
@@ -81,7 +89,7 @@ const INITIAL_PRODUCTS: Product[] = [
     storage_temp_c: 1.5,
   },
   {
-    id: 'prod-rb-125',
+    id: '10000000-0000-0000-0000-000000000005',
     sku: 'BF-RAS-HER-125G',
     barcode: '899123456705',
     plu_code: '4031',
@@ -97,7 +105,7 @@ const INITIAL_PRODUCTS: Product[] = [
     storage_temp_c: 1.0,
   },
   {
-    id: 'prod-bk-125',
+    id: '10000000-0000-0000-0000-000000000006',
     sku: 'BF-BLK-ARK-125G',
     barcode: '899123456706',
     plu_code: '4041',
@@ -115,13 +123,13 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function App() {
-  const [products] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(() => loadCachedProducts() || INITIAL_PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>(() => loadLocalCart());
   const [shift, setShift] = useState<ShiftInfo>(
     () =>
       loadLocalShift() || {
-        id: 'shift-20261108-01',
-        register_id: 'reg-jkt-01',
+        id: '50000000-0000-0000-0000-000000000001',
+        register_id: 'd0000000-0000-0000-0000-000000000001',
         register_code: 'POS-REG-01',
         cashier_name: 'Siti Rahma',
         opened_at: new Date().toISOString(),
@@ -133,12 +141,16 @@ export default function App() {
   );
 
   const [isOffline, setIsOffline] = useState(false);
+  const [offlineQueue, setOfflineQueue] = useState<QueuedSale[]>(() => loadOfflineSales());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncToast, setSyncToast] = useState('');
+
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isShiftOpen, setIsShiftOpen] = useState(false);
   const [activeReceipt, setActiveReceipt] = useState<ReceiptData | null>(null);
 
-  // Preserve cart to localStorage on every change
+  // Preserve cart to localStorage
   useEffect(() => {
     saveLocalCart(cart);
   }, [cart]);
@@ -148,21 +160,108 @@ export default function App() {
     saveLocalShift(shift);
   }, [shift]);
 
-  // Check connection to Core
+  // Fetch live products from Core catalog API
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`${CORE_API_URL}/api/v1/catalog/products?channel=POS`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          setProducts(data.data);
+          saveCachedProducts(data.data);
+        }
+      }
+    } catch (e) {
+      // Keep cached / initial products
+    }
+  }, []);
+
+  // Sync Shift from Core API
+  const fetchShift = useCallback(async () => {
+    try {
+      const res = await fetch(`${CORE_API_URL}/api/v1/retail/shifts/current?register_code=POS-REG-01`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.data) {
+          setShift(data.data);
+          saveLocalShift(data.data);
+        }
+      }
+    } catch (e) {
+      // Keep local shift
+    }
+  }, []);
+
+  // Sync offline sales to backend with idempotency
+  const syncOfflineSales = useCallback(async () => {
+    const queue = loadOfflineSales();
+    if (queue.length === 0 || isSyncing) return;
+
+    setIsSyncing(true);
+    let syncedCount = 0;
+
+    for (const item of queue) {
+      try {
+        const res = await fetch(`${CORE_API_URL}/api/v1/retail/sales/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item.payload),
+          signal: AbortSignal.timeout(4000),
+        });
+
+        if (res.ok) {
+          removeOfflineSale(item.receipt_number);
+          syncedCount++;
+        }
+      } catch (err) {
+        break; // Still unreachable
+      }
+    }
+
+    const remaining = loadOfflineSales();
+    setOfflineQueue(remaining);
+    setIsSyncing(false);
+
+    if (syncedCount > 0) {
+      setSyncToast(`Successfully synced ${syncedCount} offline sale(s) to Central Database`);
+      setTimeout(() => setSyncToast(''), 4000);
+      fetchShift();
+    }
+  }, [isSyncing, fetchShift]);
+
+  // Check connection to Core and trigger sync when connection restores
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const res = await fetch('http://localhost:8080/health', { method: 'GET', signal: AbortSignal.timeout(1500) });
-        if (res.ok) setIsOffline(false);
-        else setIsOffline(true);
+        const res = await fetch(`${CORE_API_URL}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) {
+          setIsOffline(false);
+          // If returning from offline, sync queued sales
+          if (loadOfflineSales().length > 0) {
+            syncOfflineSales();
+          }
+        } else {
+          setIsOffline(true);
+        }
       } catch (e) {
         setIsOffline(true);
       }
     };
+
     checkConnection();
-    const interval = setInterval(checkConnection, 10000);
+    fetchProducts();
+    fetchShift();
+
+    const interval = setInterval(checkConnection, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchProducts, fetchShift, syncOfflineSales]);
 
   const handleSelectProduct = (product: Product, quantityBase: number) => {
     setCart((prev) => {
@@ -255,33 +354,50 @@ export default function App() {
       cash_change_cents: Math.max(0, tenderedCents - total),
     };
 
-    // Try posting to core API
+    const checkoutPayload = {
+      receipt_number: receiptNum,
+      items: cart.map((i) => ({
+        product_id: i.product.id,
+        product_name: i.product.name,
+        quantity_base: i.quantity_base,
+        is_catch_weight: i.product.is_catch_weight,
+        unit_price_cents: i.unit_price_cents,
+        line_total_cents: i.line_total_cents,
+      })),
+      subtotal_cents: subtotal,
+      discount_cents: 0,
+      tax_cents: tax,
+      total_amount_cents: total,
+      payment_method: method,
+      cash_tendered_cents: tenderedCents,
+    };
+
+    // Try posting to Core API
+    let savedOnline = false;
     try {
-      await fetch('http://localhost:8080/api/v1/retail/sales/checkout', {
+      const res = await fetch(`${CORE_API_URL}/api/v1/retail/sales/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: cart.map((i) => ({
-            product_id: i.product.id,
-            product_name: i.product.name,
-            quantity_base: i.quantity_base,
-            is_catch_weight: i.product.is_catch_weight,
-            unit_price_cents: i.unit_price_cents,
-            line_total_cents: i.line_total_cents,
-          })),
-          subtotal_cents: subtotal,
-          discount_cents: 0,
-          tax_cents: tax,
-          total_amount_cents: total,
-          payment_method: method,
-          cash_tendered_cents: tenderedCents,
-        }),
+        body: JSON.stringify(checkoutPayload),
+        signal: AbortSignal.timeout(3500),
       });
+      if (res.ok) {
+        savedOnline = true;
+      } else {
+        throw new Error('Server error');
+      }
     } catch (e) {
-      console.warn('POS Core unreachable; transaction saved locally');
+      // Save in offline queue with idempotency key
+      const queuedSale: QueuedSale = {
+        receipt_number: receiptNum,
+        payload: checkoutPayload,
+        queued_at: new Date().toISOString(),
+      };
+      saveOfflineSale(queuedSale);
+      setOfflineQueue(loadOfflineSales());
     }
 
-    // Update shift metrics
+    // Update local shift metrics
     setShift((prev) => ({
       ...prev,
       total_transactions: prev.total_transactions + 1,
@@ -295,15 +411,72 @@ export default function App() {
     clearLocalCart();
   };
 
-  const handleCloseShift = (actualCash: number) => {
+  const handleCloseShift = async (actualCash: number) => {
+    try {
+      await fetch(`${CORE_API_URL}/api/v1/retail/shifts/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actual_cash_cents: actualCash, notes: 'End-of-shift drawer reconciliation' }),
+      });
+    } catch (e) {
+      console.warn('Shift close recorded locally');
+    }
     setShift((prev) => ({ ...prev, status: 'CLOSED' }));
+    setIsShiftOpen(false);
+  };
+
+  const handleOpenShift = async (openingFloat: number) => {
+    try {
+      const res = await fetch(`${CORE_API_URL}/api/v1/retail/shifts/open`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ register_id: shift.register_id || 'POS-REG-01', opening_cash_float_cents: openingFloat }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data) {
+          setShift(data.data);
+          setIsShiftOpen(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Shift open recorded locally');
+    }
+
+    setShift((prev) => ({
+      ...prev,
+      status: 'OPEN',
+      opening_cash_float_cents: openingFloat,
+      total_transactions: 0,
+      total_revenue_cents: 0,
+      opened_at: new Date().toISOString(),
+    }));
     setIsShiftOpen(false);
   };
 
   return (
     <div className="flex flex-col h-screen bg-berry-cream overflow-hidden">
-      {/* Offline Alert Banner */}
-      <OfflineBanner isOffline={isOffline} />
+      {/* Offline Alert & Sync Banner */}
+      <OfflineBanner
+        isOffline={isOffline}
+        pendingCount={offlineQueue.length}
+        isSyncing={isSyncing}
+        onSync={syncOfflineSales}
+      />
+
+      {/* Sync Success Toast */}
+      {syncToast && (
+        <div className="bg-emerald-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-white" />
+            <span>{syncToast}</span>
+          </div>
+          <button onClick={() => setSyncToast('')} className="text-white/80 hover:text-white">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Top POS Header */}
       <header className="bg-white border-b border-berry-blush/40 px-6 py-2.5 flex justify-between items-center shadow-sm">
@@ -315,11 +488,16 @@ export default function App() {
             <div className="flex items-center gap-2">
               <h1 className="font-black text-sm tracking-tight text-berry-red">BERRY FRESH POS</h1>
               <span className="text-[10px] bg-berry-pastel text-berry-red font-extrabold px-2 py-0.5 rounded-full">
-                STORE JKT-01
+                {shift.register_code}
               </span>
+              {offlineQueue.length > 0 && (
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  {offlineQueue.length} Queue
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-berry-charcoal/60 flex items-center gap-1 font-medium">
-              <Store className="w-3 h-3 text-berry-green" /> Central Jakarta Store • Reg 01
+              <Store className="w-3 h-3 text-berry-green" /> {shift.store_name || 'Central Jakarta Store'}
             </p>
           </div>
         </div>
@@ -341,20 +519,20 @@ export default function App() {
             className="px-3 py-1.5 bg-berry-cream hover:bg-berry-pastel border border-berry-beige text-berry-charcoal font-bold text-xs rounded-xl flex items-center gap-1.5 transition"
           >
             <Clock className="w-3.5 h-3.5 text-berry-red" />
-            <span>Shift Register</span>
+            <span>Shift Register ({shift.status})</span>
           </button>
         </div>
       </header>
 
       {/* Workspace Split */}
       <main className="flex-1 p-4 grid grid-cols-12 gap-4 overflow-hidden">
-        {/* Left: PLU Grid (7 cols) */}
-        <div className="col-span-12 lg:col-span-7 h-full overflow-hidden">
+        {/* Left Column: PLU Quick-Keys & Catalog (7 cols) */}
+        <div className="col-span-12 lg:col-span-7 flex flex-col h-full overflow-hidden bg-white rounded-3xl p-4 border border-berry-blush/40 shadow-sm">
           <PLUGrid products={products} onSelectProduct={handleSelectProduct} />
         </div>
 
-        {/* Right: Cart List (5 cols) */}
-        <div className="col-span-12 lg:col-span-5 h-full overflow-hidden">
+        {/* Right Column: Active Cart & Totals (5 cols) */}
+        <div className="col-span-12 lg:col-span-5 flex flex-col h-full overflow-hidden bg-white rounded-3xl p-4 border border-berry-blush/40 shadow-sm">
           <CartList
             items={cart}
             onUpdateQty={handleUpdateQty}
@@ -365,25 +543,31 @@ export default function App() {
         </div>
       </main>
 
-      {/* Modals */}
+      {/* Tender Payment Modal */}
       <PaymentModal
-        isOpen={isPaymentOpen}
         totalAmountCents={total}
+        isOpen={isPaymentOpen}
         onClose={() => setIsPaymentOpen(false)}
         onConfirmPayment={handleConfirmPayment}
       />
 
+      {/* ESC/POS Thermal Receipt Modal */}
       <ReceiptModal
-        isOpen={isReceiptOpen}
         receipt={activeReceipt}
-        onNewSale={() => setIsReceiptOpen(false)}
+        isOpen={isReceiptOpen}
+        onNewSale={() => {
+          setIsReceiptOpen(false);
+          setActiveReceipt(null);
+        }}
       />
 
+      {/* Cashier Shift Modal */}
       <ShiftModal
-        isOpen={isShiftOpen}
         shift={shift}
+        isOpen={isShiftOpen}
         onClose={() => setIsShiftOpen(false)}
         onCloseShift={handleCloseShift}
+        onOpenShift={handleOpenShift}
       />
     </div>
   );
