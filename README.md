@@ -1,4 +1,17 @@
 # 🍓 Berry Fresh — Integrated Fruit Business Ecosystem
+
+[![Go Version](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Fiber](https://img.shields.io/badge/Fiber-v3.0.0_beta.4-00ACD7?style=flat&logo=fiber)](https://gofiber.io/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?style=flat&logo=vite)](https://vitejs.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql)](https://www.postgresql.org/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-FF6600?style=flat&logo=rabbitmq)](https://www.rabbitmq.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker_Compose-11_Services-2496ED?style=flat&logo=docker)](https://www.docker.com/)
+[![Automated Tests](https://img.shields.io/badge/E2E_&_Unit_Tests-100%25_Passing-brightgreen?style=flat)](core/internal/e2e/e2e_test.go)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 > **Berry Good Business. Freshness Connected.**  
 > Business Category: Fruit & Agricultural Business Ecosystem
 
@@ -89,24 +102,48 @@ Once running, access:
 - **RabbitMQ:** running on port 5672 (optional for local mock outbox)
 
 #### 2. Setup PostgreSQL Database & Migrations
-Create the database `berryfresh_db` in PostgreSQL:
-```sql
-CREATE DATABASE berryfresh_db;
+
+Anda dapat membuat database, menjalankan 8 skrip migrasi, dan mengisi data awal cukup dengan menjalankan script 1-klik:
+```bash
+# Jalankan via Windows Command Prompt / Explorer:
+setup-db.bat
+
+# Atau via PowerShell:
+.\setup-db.ps1
+
+# Atau via Go CLI:
+cd core && go run ./cmd/seed/main.go
 ```
 
-The Core backend includes an automated migration runner (`core/internal/database/migrations.go`) that automatically executes migrations `000001` through `000008` sequentially on startup, verifying table schema integrity and seeding:
-- Master Organizations (`BF-HQ`) & Facilities (`WH-JKT-MAIN`, `FARM-CWD-01`, etc.)
-- Retail Store (`STORE-JKT-01`) & Cash Registers (`POS-REG-01`)
-- Seed Users with bcrypt hashes:
-  - **Admin:** `admin@berryfresh.com` (password: `admin123`)
-  - **Cashier:** `cashier@berryfresh.com` (password: `pos123`)
-  - **Manager:** `manager@berryfresh.com` (password: `mgr123`)
-  - **Warehouse:** `warehouse@berryfresh.com` (password: `wh123`)
-  - **Customer:** `customer@berryfresh.com` (password: `cust123`)
-- Master Fruit Catalog & Varieties: Albion Strawberries, Sweet Charlie Catch-weight, Duke Blueberries, Emerald Jumbo, Heritage Raspberries, Prime-Ark Blackberries.
-- Active Batches with Brix sweetness levels and expiration dates.
-- Initial Warehouse and Retail Store Stock Balances.
-- Active POS Cashier Shift for testing.
+Script ini otomatis memigrasikan 16 skema domain dan mengimpor **18 data seeder JSON** dari folder [`core/seeds/`](core/seeds/):
+
+| No | File Seeder JSON | Target Tabel Domain | Keterangan Data Awal |
+|---|---|---|---|
+| 1 | `01_organizations.json` | `governance.organizations` | Holding perusahaan (*Berry Fresh Holdings*) |
+| 2 | `02_facilities.json` | `governance.facilities` | Central Cold Storage Pluit & Kebun Ciwidey/Lembang/Batu |
+| 3 | `03_stores.json` | `governance.stores` | Gerai toko fisik Senopati (*STORE-JKT-01*) |
+| 4 | `04_cash_registers.json` | `retail.cash_registers` | Mesin terminal POS 01 (Main) & 02 (Express) |
+| 5 | `05_roles.json` | `identity.roles` | Role hak akses (OWNER, ADMIN, CASHIER, dll.) |
+| 6 | `06_users.json` | `identity.users` | Akun pengguna uji coba dengan password hash bcrypt |
+| 7 | `07_user_roles.json` | `identity.user_roles` | Relasi penugasan role ke masing-masing pengguna |
+| 8 | `08_categories.json` | `catalog.categories` | Kategori komoditas (Berries, Citrus, dll.) |
+| 9 | `09_units_of_measure.json` | `catalog.units_of_measure` | Satuan ukur (kg, gram, punnet 125g, 250g, 500g, crate) |
+| 10 | `10_varieties.json` | `catalog.varieties` | Varietas kultivar (Albion, Sweet Charlie, Duke, dll.) |
+| 11 | `11_products.json` | `catalog.products` | Master katalog SKU stroberi, bluberi, rasberi, blakberi |
+| 12 | `12_product_prices.json` | `catalog.product_prices` | Matriks harga channel POS & E-Commerce |
+| 13 | `13_suppliers.json` | `procurement.suppliers` | Direktori pemasok & kelompok tani agro mitra |
+| 14 | `14_farms.json` | `production.farms` | Lahan kebun dataran tinggi & sertifikasi GlobalG.A.P |
+| 15 | `15_batches.json` | `traceability.batches` | Lot panen aktif dengan Brix 9°-13° Bx & jam kedaluwarsa FEFO |
+| 16 | `16_stock_balances.json` | `inventory.stock_balances` | Saldo stok awal di Gudang Pluit dan Toko Senopati |
+| 17 | `17_cashier_shifts.json` | `retail.cashier_shifts` | Sesi shift kasir berjalan dengan modal laci Rp 200.000 |
+| 18 | `18_articles.json` | `articles` (Knowledge Hub) | Artikel edukasi riset sains rantai dingin & nutrisi |
+
+Akun pengguna yang otomatis aktif setelah seeding:
+- **Admin:** `admin@berryfresh.com` (password: `admin123`)
+- **Cashier:** `cashier@berryfresh.com` (password: `pos123`)
+- **Manager:** `manager@berryfresh.com` (password: `mgr123`)
+- **Warehouse:** `warehouse@berryfresh.com` (password: `wh123`)
+- **Customer:** `customer@berryfresh.com` (password: `cust123`)
 
 #### 3. Start Core API Backend
 ```bash

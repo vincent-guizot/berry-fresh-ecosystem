@@ -1,0 +1,650 @@
+// ========================================================
+// 🍓 BERRY FRESH ECOSYSTEM — DATABASE MARKUP LANGUAGE (DBML)
+// ========================================================
+// Paste this code into https://dbdiagram.io to visualize
+// the interactive Entity-Relationship Diagram (ERD).
+// Compatible with DBML v2.6+ / dbdiagram.io / dbdocs.io
+// ========================================================
+
+Project berry_fresh_ecosystem {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # 🍓 Berry Fresh Ecosystem Database Architecture
+    16 Domain Schemas connecting Farm to Harvest, Receiving, FEFO Batch Tracking,
+    Cold Storage, POS Retail Cashier, and E-Commerce Commerce.
+  '''
+}
+
+// --------------------------------------------------------
+// ENUMS
+// --------------------------------------------------------
+
+Enum facility_type {
+  COLD_STORAGE
+  FARM
+  DISTRIBUTION_HUB
+  PACKING_HOUSE
+}
+
+Enum uom_type {
+  WEIGHT
+  PIECE
+  VOLUME
+}
+
+Enum quality_grade {
+  GRADE_A
+  GRADE_B
+  GRADE_C
+  REJECT
+}
+
+Enum batch_status {
+  ACTIVE
+  DEPLETED
+  QUARANTINED
+  EXPIRED
+}
+
+Enum reservation_status {
+  ACTIVE
+  COMMITTED
+  RELEASED
+}
+
+Enum movement_type {
+  RECEIVING
+  TRANSFER_OUT
+  TRANSFER_IN
+  POS_SALE
+  ECOMMERCE_SALE
+  SHRINKAGE
+  SPOILAGE
+  RETURN
+  ADJUSTMENT
+}
+
+Enum reason_code {
+  MOISTURE_LOSS
+  SPOILED_DISCARD
+  DEFECT_DOWNGRADE
+  DAMAGED_TRANSIT
+  COUNT_DISCREPANCY
+}
+
+Enum shift_status {
+  OPEN
+  CLOSED
+  RECONCILED
+}
+
+Enum pos_payment_method {
+  CASH
+  QRIS_DYNAMIC
+  DEBIT_CARD
+  SPLIT
+}
+
+Enum order_status {
+  PENDING_PAYMENT
+  PAID
+  ALLOCATED
+  PACKING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+Enum outbox_status {
+  PENDING
+  PUBLISHED
+  DEAD_LETTER
+}
+
+// --------------------------------------------------------
+// 1. GOVERNANCE SCHEMA
+// --------------------------------------------------------
+
+Table governance.organizations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(50) [unique, not null, note: 'e.g. BF-HQ']
+  name varchar(255) [not null]
+  tax_id varchar(50)
+  currency varchar(10) [default: 'IDR']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  Note: 'Holding company and enterprise legal entity'
+}
+
+Table governance.facilities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  organization_id uuid [not null]
+  code varchar(50) [unique, not null, note: 'e.g. WH-JKT-MAIN']
+  name varchar(255) [not null]
+  facility_type facility_type [not null]
+  address text [not null]
+  city varchar(100) [not null]
+  province varchar(100) [not null]
+  postal_code varchar(20) [not null]
+  is_active boolean [default: true]
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Cold storage hubs, sorting centers, and managed farm plots'
+}
+
+Table governance.stores {
+  id uuid [pk, default: `gen_random_uuid()`]
+  organization_id uuid [not null]
+  facility_id uuid
+  code varchar(50) [unique, not null, note: 'e.g. STORE-JKT-01']
+  name varchar(255) [not null]
+  address text [not null]
+  phone varchar(50)
+  is_active boolean [default: true]
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Physical retail fruit boutique and supermarket concession outlets'
+}
+
+// --------------------------------------------------------
+// 2. IDENTITY & RBAC SCHEMA
+// --------------------------------------------------------
+
+Table identity.roles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(50) [unique, not null, note: 'ADMIN, CASHIER, MANAGER, WAREHOUSE, etc.']
+  name varchar(100) [not null]
+  description text
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Role definitions for hierarchical access control'
+}
+
+Table identity.users {
+  id uuid [pk, default: `gen_random_uuid()`]
+  organization_id uuid [not null]
+  email varchar(255) [unique, not null]
+  phone varchar(50)
+  password_hash varchar(255) [not null, note: 'bcrypt hash']
+  full_name varchar(255) [not null]
+  status varchar(20) [default: 'ACTIVE']
+  assigned_store_id uuid
+  assigned_facility_id uuid
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  Note: 'Authenticated system operators, store cashiers, and warehouse clerks'
+}
+
+Table identity.user_roles {
+  user_id uuid [not null]
+  role_id uuid [not null]
+
+  indexes {
+    (user_id, role_id) [pk]
+  }
+
+  Note: 'Junction table assigning roles to operators'
+}
+
+// --------------------------------------------------------
+// 3. CATALOG & UOM SCHEMA
+// --------------------------------------------------------
+
+Table catalog.categories {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(50) [unique, not null, note: 'BERRIES, STONE_FRUITS, etc.']
+  name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+
+  Note: 'Agricultural commodity groupings'
+}
+
+Table catalog.units_of_measure {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(50) [unique, not null, note: 'KG, GRAM, PUNNET_125, PUNNET_250']
+  name varchar(100) [not null]
+  symbol varchar(20) [not null]
+  uom_type uom_type [not null]
+  conversion_factor_to_base numeric(12,6) [default: 1.0]
+
+  Note: 'Dual-UOM engine converting discrete clamshells and variable catch-weight'
+}
+
+Table catalog.varieties {
+  id uuid [pk, default: `gen_random_uuid()`]
+  category_id uuid [not null]
+  code varchar(50) [unique, not null, note: 'ALBION, SWEET_CHARLIE, DUKE, EMERALD']
+  name varchar(100) [not null]
+  flavor_profile text
+
+  Note: 'Cultivar species defining sweetness Brix potential and pulp texture'
+}
+
+Table catalog.products {
+  id uuid [pk, default: `gen_random_uuid()`]
+  category_id uuid [not null]
+  variety_id uuid [not null]
+  sku varchar(100) [unique, not null, note: 'e.g. BF-STR-ALB-250G']
+  barcode varchar(100)
+  plu_code varchar(20) [note: 'Quick key for POS scale stations, e.g. 4011']
+  name varchar(255) [not null]
+  description text
+  primary_uom_id uuid [not null]
+  is_catch_weight boolean [default: false]
+  optimum_storage_temp_c numeric(4,2) [default: 2.0]
+  expected_shelf_life_days int [default: 7]
+  image_url text
+  is_active boolean [default: true]
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Master sellable fruit items and packaging specifications'
+}
+
+Table catalog.product_prices {
+  id uuid [pk, default: `gen_random_uuid()`]
+  product_id uuid [not null]
+  channel varchar(20) [not null, note: 'POS, ECOMMERCE, MANUAL']
+  base_price_cents bigint [not null, note: 'IDR currency in integer cents']
+  compare_at_price_cents bigint
+  is_active boolean [default: true]
+
+  indexes {
+    (product_id, channel) [unique]
+  }
+
+  Note: 'Channel-specific pricing matrices'
+}
+
+// --------------------------------------------------------
+// 4. PROCUREMENT & PRODUCTION SCHEMA
+// --------------------------------------------------------
+
+Table procurement.suppliers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(50) [unique, not null, note: 'SUP-CWD-01']
+  company_name varchar(255) [not null]
+  contact_name varchar(100)
+  email varchar(255)
+  phone varchar(50)
+  city varchar(100)
+  rating numeric(3,2) [default: 5.0]
+  is_active boolean [default: true]
+
+  Note: 'Grower cooperatives and commercial contract farm partners'
+}
+
+Table production.farms {
+  id uuid [pk, default: `gen_random_uuid()`]
+  supplier_id uuid [not null]
+  name varchar(255) [not null]
+  region varchar(100) [not null]
+  altitude_meters int [note: 'Critical for berry sugar accumulation (1200-1500 mdpl)']
+  certification varchar(100) [note: 'GlobalG.A.P, Organik Indonesia']
+
+  Note: 'Geographic farm plot provenance for food safety traceability'
+}
+
+// --------------------------------------------------------
+// 5. TRACEABILITY & INVENTORY SCHEMA (FEFO ENGINE)
+// --------------------------------------------------------
+
+Table traceability.batches {
+  id uuid [pk, default: `gen_random_uuid()`]
+  batch_code varchar(100) [unique, not null, note: 'BF-YYYYMMDD-VAR-XX']
+  product_id uuid [not null]
+  farm_id uuid
+  supplier_id uuid
+  harvest_date date [not null]
+  receiving_date date [not null]
+  best_before_date date [not null, note: 'FEFO sorting key']
+  expiry_date date [not null]
+  quality_grade quality_grade [default: 'GRADE_A']
+  measured_brix numeric(4,2) [note: 'Sugar content (°Bx)']
+  initial_quantity_base numeric(14,4) [not null]
+  remaining_quantity_base numeric(14,4) [not null]
+  status batch_status [default: 'ACTIVE']
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Harvest lots with cold-chain shelf-life timers'
+}
+
+Table inventory.stock_balances {
+  id uuid [pk, default: `gen_random_uuid()`]
+  facility_id uuid
+  store_id uuid
+  product_id uuid [not null]
+  batch_id uuid [not null]
+  quantity_on_hand_base numeric(14,4) [default: 0]
+  quantity_reserved_base numeric(14,4) [default: 0]
+  last_counted_at timestamptz
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (facility_id, store_id, product_id, batch_id) [unique]
+    (product_id, facility_id, store_id) [name: 'idx_stock_balances_fefo']
+  }
+
+  Note: 'Real-time inventory levels locked by batch and location'
+}
+
+Table inventory.stock_reservations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  stock_balance_id uuid [not null]
+  channel varchar(20) [not null]
+  reference_id varchar(100) [not null, note: 'Order ID / Cart ID']
+  quantity_reserved_base numeric(14,4) [not null]
+  expires_at timestamptz [not null]
+  status reservation_status [default: 'ACTIVE']
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Temporary stock holds preventing double-selling during checkout'
+}
+
+Table inventory.stock_movements {
+  id uuid [pk, default: `gen_random_uuid()`]
+  movement_type movement_type [not null]
+  facility_id uuid
+  store_id uuid
+  product_id uuid [not null]
+  batch_id uuid [not null]
+  quantity_change_base numeric(14,4) [not null]
+  running_balance_base numeric(14,4) [not null]
+  unit_cost_cents bigint [default: 0]
+  reference_type varchar(50) [note: 'pos_sale, ecommerce_order, receiving_record']
+  reference_id varchar(100)
+  notes text
+  created_by uuid
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Immutable append-only ledger for all physical stock movements'
+}
+
+Table inventory.stock_adjustments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  facility_id uuid
+  store_id uuid
+  product_id uuid [not null]
+  batch_id uuid [not null]
+  adjusted_quantity_base numeric(14,4) [not null]
+  reason_code reason_code [not null]
+  reported_by uuid [not null]
+  approved_by uuid
+  notes text
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Audit-logged shrinkage write-offs and quality downgrades'
+}
+
+// --------------------------------------------------------
+// 6. RETAIL POS SCHEMA
+// --------------------------------------------------------
+
+Table retail.cash_registers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_id uuid [not null]
+  terminal_code varchar(50) [unique, not null, note: 'POS-REG-01']
+  name varchar(100) [not null]
+  is_active boolean [default: true]
+
+  Note: 'Physical cashier hardware terminals'
+}
+
+Table retail.cashier_shifts {
+  id uuid [pk, default: `gen_random_uuid()`]
+  register_id uuid [not null]
+  cashier_user_id uuid [not null]
+  opened_at timestamptz [default: `now()`]
+  closed_at timestamptz
+  opening_cash_float_cents bigint [not null, default: 0]
+  closing_cash_actual_cents bigint
+  expected_cash_cents bigint
+  cash_discrepancy_cents bigint
+  total_sales_count int [default: 0]
+  total_sales_amount_cents bigint [default: 0]
+  status shift_status [default: 'OPEN']
+  notes text
+
+  Note: 'Cash drawer shifts and reconciliation discrepancy audits'
+}
+
+Table retail.pos_sales {
+  id uuid [pk, default: `gen_random_uuid()`]
+  receipt_number varchar(50) [unique, not null, note: 'Natural idempotency key']
+  shift_id uuid [not null]
+  store_id uuid [not null]
+  customer_id uuid
+  subtotal_cents bigint [not null]
+  discount_cents bigint [default: 0]
+  tax_cents bigint [default: 0, note: '11% PPN']
+  total_amount_cents bigint [not null]
+  payment_method pos_payment_method [not null]
+  cash_tendered_cents bigint
+  cash_change_cents bigint
+  transacted_at timestamptz [default: `now()`]
+
+  Note: 'Point-of-Sale receipts with offline replay idempotency'
+}
+
+Table retail.pos_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  pos_sale_id uuid [not null]
+  product_id uuid [not null]
+  batch_id uuid [not null]
+  sold_quantity_base numeric(14,4) [not null]
+  unit_price_cents bigint [not null]
+  line_total_cents bigint [not null]
+  weighed_on_scale boolean [default: false]
+
+  Note: 'Individual receipt lines (clamshell units or weighed grams)'
+}
+
+// --------------------------------------------------------
+// 7. COMMERCE (E-COMMERCE) SCHEMA
+// --------------------------------------------------------
+
+Table commerce.customers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid
+  full_name varchar(255) [not null]
+  email varchar(255)
+  phone varchar(50) [unique]
+  loyalty_points int [default: 0]
+  created_at timestamptz [default: `now()`]
+
+  Note: 'Customer profiles and loyalty accounts'
+}
+
+Table commerce.customer_addresses {
+  id uuid [pk, default: `gen_random_uuid()`]
+  customer_id uuid [not null]
+  label varchar(50) [default: 'Home']
+  recipient_name varchar(255) [not null]
+  phone varchar(50) [not null]
+  street_address text [not null]
+  city varchar(100) [not null]
+  province varchar(100) [not null]
+  postal_code varchar(20) [not null]
+  is_default boolean [default: false]
+
+  Note: 'Cold-chain delivery addresses'
+}
+
+Table commerce.orders {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_number varchar(50) [unique, not null, note: 'BF-ORD-YYYYMMDD-XXXX']
+  customer_id uuid [not null]
+  delivery_address_id uuid
+  status order_status [default: 'PENDING_PAYMENT']
+  subtotal_cents bigint [not null]
+  delivery_fee_cents bigint [default: 25000, note: 'Standard cold courier express fee']
+  discount_cents bigint [default: 0]
+  tax_cents bigint [default: 0]
+  total_amount_cents bigint [not null]
+  payment_method varchar(50) [note: 'QRIS, BANK_TRANSFER, CASH_ON_DELIVERY']
+  payment_reference varchar(100)
+  paid_at timestamptz
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  Note: 'E-Commerce orders with server-side price authority'
+}
+
+Table commerce.order_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [not null]
+  product_id uuid [not null]
+  batch_id uuid
+  ordered_quantity numeric(12,4) [not null]
+  uom_id uuid [not null]
+  unit_price_cents bigint [not null]
+  line_total_cents bigint [not null]
+
+  Note: 'Order line items mapped to specific FEFO batches'
+}
+
+// --------------------------------------------------------
+// 8. AUDIT & OUTBOX SCHEMA
+// --------------------------------------------------------
+
+Table audit.outbox_events {
+  id uuid [pk, default: `gen_random_uuid()`]
+  event_type varchar(100) [not null, note: 'order.paid, pos.transaction.completed, etc.']
+  aggregate_type varchar(50) [not null, note: 'order, pos_sale, inventory']
+  aggregate_id varchar(100) [not null]
+  payload jsonb [not null]
+  status outbox_status [default: 'PENDING']
+  retry_count int [default: 0]
+  error_message text
+  published_at timestamptz
+  created_at timestamptz [default: `now()`]
+
+  indexes {
+    (status, created_at) [name: 'idx_outbox_pending']
+  }
+
+  Note: 'Transactional Outbox guaranteeing zero message loss to RabbitMQ'
+}
+
+// --------------------------------------------------------
+// RELATIONSHIPS (FOREIGN KEYS)
+// --------------------------------------------------------
+
+// Governance & Identity
+Ref: governance.facilities.organization_id > governance.organizations.id
+Ref: governance.stores.organization_id > governance.organizations.id
+Ref: governance.stores.facility_id > governance.facilities.id
+Ref: identity.users.organization_id > governance.organizations.id
+Ref: identity.users.assigned_store_id > governance.stores.id
+Ref: identity.users.assigned_facility_id > governance.facilities.id
+Ref: identity.user_roles.user_id > identity.users.id
+Ref: identity.user_roles.role_id > identity.roles.id
+
+// Catalog
+Ref: catalog.varieties.category_id > catalog.categories.id
+Ref: catalog.products.category_id > catalog.categories.id
+Ref: catalog.products.variety_id > catalog.varieties.id
+Ref: catalog.products.primary_uom_id > catalog.units_of_measure.id
+Ref: catalog.product_prices.product_id > catalog.products.id
+
+// Production & Traceability
+Ref: production.farms.supplier_id > procurement.suppliers.id
+Ref: traceability.batches.product_id > catalog.products.id
+Ref: traceability.batches.farm_id > production.farms.id
+Ref: traceability.batches.supplier_id > procurement.suppliers.id
+
+// Inventory
+Ref: inventory.stock_balances.facility_id > governance.facilities.id
+Ref: inventory.stock_balances.store_id > governance.stores.id
+Ref: inventory.stock_balances.product_id > catalog.products.id
+Ref: inventory.stock_balances.batch_id > traceability.batches.id
+Ref: inventory.stock_reservations.stock_balance_id > inventory.stock_balances.id
+Ref: inventory.stock_movements.facility_id > governance.facilities.id
+Ref: inventory.stock_movements.store_id > governance.stores.id
+Ref: inventory.stock_movements.product_id > catalog.products.id
+Ref: inventory.stock_movements.batch_id > traceability.batches.id
+Ref: inventory.stock_movements.created_by > identity.users.id
+Ref: inventory.stock_adjustments.facility_id > governance.facilities.id
+Ref: inventory.stock_adjustments.store_id > governance.stores.id
+Ref: inventory.stock_adjustments.product_id > catalog.products.id
+Ref: inventory.stock_adjustments.batch_id > traceability.batches.id
+Ref: inventory.stock_adjustments.reported_by > identity.users.id
+Ref: inventory.stock_adjustments.approved_by > identity.users.id
+
+// Retail POS
+Ref: retail.cash_registers.store_id > governance.stores.id
+Ref: retail.cashier_shifts.register_id > retail.cash_registers.id
+Ref: retail.cashier_shifts.cashier_user_id > identity.users.id
+Ref: retail.pos_sales.shift_id > retail.cashier_shifts.id
+Ref: retail.pos_sales.store_id > governance.stores.id
+Ref: retail.pos_sales.customer_id > commerce.customers.id
+Ref: retail.pos_items.pos_sale_id > retail.pos_sales.id
+Ref: retail.pos_items.product_id > catalog.products.id
+Ref: retail.pos_items.batch_id > traceability.batches.id
+
+// Commerce (E-Commerce)
+Ref: commerce.customers.user_id > identity.users.id
+Ref: commerce.customer_addresses.customer_id > commerce.customers.id
+Ref: commerce.orders.customer_id > commerce.customers.id
+Ref: commerce.orders.delivery_address_id > commerce.customer_addresses.id
+Ref: commerce.order_items.order_id > commerce.orders.id
+Ref: commerce.order_items.product_id > catalog.products.id
+Ref: commerce.order_items.batch_id > traceability.batches.id
+Ref: commerce.order_items.uom_id > catalog.units_of_measure.id
+
+// --------------------------------------------------------
+// TABLE GROUPS FOR VISUAL CLARITY IN DBDATAGRAM.IO
+// --------------------------------------------------------
+
+TableGroup GovernanceGroup {
+  governance.organizations
+  governance.facilities
+  governance.stores
+}
+
+TableGroup IdentityGroup {
+  identity.roles
+  identity.users
+  identity.user_roles
+}
+
+TableGroup CatalogGroup {
+  catalog.categories
+  catalog.units_of_measure
+  catalog.varieties
+  catalog.products
+  catalog.product_prices
+}
+
+TableGroup TraceabilityProductionGroup {
+  procurement.suppliers
+  production.farms
+  traceability.batches
+}
+
+TableGroup InventoryGroup {
+  inventory.stock_balances
+  inventory.stock_reservations
+  inventory.stock_movements
+  inventory.stock_adjustments
+}
+
+TableGroup RetailPOSGroup {
+  retail.cash_registers
+  retail.cashier_shifts
+  retail.pos_sales
+  retail.pos_items
+}
+
+TableGroup CommerceGroup {
+  commerce.customers
+  commerce.customer_addresses
+  commerce.orders
+  commerce.order_items
+}
+
+TableGroup AuditGroup {
+  audit.outbox_events
+}
