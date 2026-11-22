@@ -82,8 +82,12 @@ func buildTestApp(cfg *config.Config, db *database.Database, outboxSvc *outbox.O
 
 	// 5. Commerce
 	comm := api.Group("/commerce")
+	comm.Get("/orders", commerceHandler.GetOrders)
 	comm.Post("/orders/checkout", commerceHandler.CheckoutOrder)
 	comm.Post("/orders/:id/pay", commerceHandler.PayOrder)
+	comm.Post("/orders/:id/cancel", commerceHandler.CancelOrder)
+	comm.Post("/orders/:id/refund", commerceHandler.RefundOrder)
+	comm.Patch("/orders/:id/fulfillment", commerceHandler.UpdateFulfillment)
 	comm.Get("/orders/:orderNumber", commerceHandler.GetOrderByNumber)
 
 	// 6. Analytics
@@ -482,5 +486,135 @@ func TestE2EInventoryBatchesAndStudioOverview(t *testing.T) {
 	data, ok := overview["data"].(map[string]interface{})
 	if !ok || data["active_batches_count"] == nil || data["gross_sales_today_cents"] == nil {
 		t.Errorf("Analytics overview missing required metrics: %v", overview)
+	}
+}
+
+func TestE2E_OrderLifecycle_Cancel_Fulfillment_Refund(t *testing.T) {
+	_, db, app, cleanup := initTestEnv(t)
+	defer cleanup()
+
+	// 1. Create Order A to test CANCELLATION before payment
+	orderPayload := map[string]interface{}{
+		"customer_name":    "Budi Santoso",
+		"customer_email":   "budi@example.com",
+		"customer_phone":   "081299887766",
+		"delivery_address": "Jl. Senopati No. 45, Jakarta Selatan",
+		"payment_method":   "QRIS",
+		"items": []map[string]interface{}{
+			{
+				"product_id": "10000000-0000-0000-0000-000000000001",
+				"quantity":   2,
+			},
+		},
+	}
+	bodyBytes, _ := json.Marshal(orderPayload)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/commerce/orders/checkout", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil || resp.StatusCode != http.StatusCreated {
+		t.Fatalf("Failed to create order A: %v (status: %d)", err, resp.StatusCode)
+	}
+
+	var checkoutRes map[string]interface{}
+	_ = json.NewDecoder(resp.Body).Decode(&checkoutRes)
+	orderData := checkoutRes["data"].(map[string]interface{})
+	orderID := orderData["order_id"].(string)
+	orderNum := orderData["order_number"].(string)
+
+	// Verify order status is PENDING_PAYMENT
+	if orderData["status"] != "PENDING_PAYMENT" {
+		t.Fatalf("Expected status PENDING_PAYMENT, got %v", orderData["status"])
+	}
+
+	// 2. Cancel Order A (Customer Cancels before payment)
+	cancelPayload := map[string]interface{}{
+		"reason": "Salah pilih varietas buah",
+	}
+	cancelBytes, _ := json.Marshal(cancelPayload)
+	reqCancel := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/commerce/orders/%s/cancel", orderID), bytes.NewReader(cancelBytes))
+	reqCancel.Header.Set("Content-Type", "application/json")
+	respCancel, err := app.Test(reqCancel)
+	if err != nil || respCancel.StatusCode != http.StatusOK {
+		t.Fatalf("Failed to cancel order: %v (status: %d)", err, respCancel.StatusCode)
+	}
+
+	var cancelRes map[string]interface{}
+	_ = json.NewDecoder(respCancel.Body).Decode(&cancelRes)
+	if cancelRes["status"] != "CANCELLED" {
+		t.Errorf("Expected status CANCELLED, got %v", cancelRes["status"])
+	}
+
+	// Verify reservations for order A are marked RELEASED in database
+	var activeResCount int
+	_ = db.Pool.QueryRow(context.Background(), `
+		SELECT count(*) FROM inventory.stock_reservations WHERE reference_id = $1 AND status = 'ACTIVE'
+	`, orderNum).Scan(&activeResCount)
+	if activeResCount != 0 {
+		t.Errorf("Expected 0 active reservations after cancellation, got %d", activeResCount)
+	}
+
+	// 3. Create Order B to test PAYMENT -> FULFILLMENT -> REFUND
+	bodyBytesB, _ := json.Marshal(orderPayload)
+	reqB := httptest.NewRequest(http.MethodPost, "/api/v1/commerce/orders/checkout", bytes.NewReader(bodyBytesB))
+	reqB.Header.Set("Content-Type", "application/json")
+	respB, _ := app.Test(reqB)
+	var checkoutResB map[string]interface{}
+	_ = json.NewDecoder(respB.Body).Decode(&checkoutResB)
+	orderDataB := checkoutResB["data"].(map[string]interface{})
+	orderIDB := orderDataB["order_id"].(string)
+
+	// Pay Order B
+	reqPay := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/commerce/orders/%s/pay", orderIDB), nil)
+	respPay, _ := app.Test(reqPay)
+	if respPay.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200 OK on pay order B, got %d", respPay.StatusCode)
+	}
+
+	// 4. Update Fulfillment: PACKING -> IN_TRANSIT -> DELIVERED
+	fulfillmentSteps := []string{"PACKING", "IN_TRANSIT", "DELIVERED"}
+	for _, step := range fulfillmentSteps {
+		fPayload := map[string]interface{}{
+			"status": step,
+			"notes":  fmt.Sprintf("Cold-chain stage: %s", step),
+		}
+		fBytes, _ := json.Marshal(fPayload)
+		reqF := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/commerce/orders/%s/fulfillment", orderIDB), bytes.NewReader(fBytes))
+		reqF.Header.Set("Content-Type", "application/json")
+		respF, err := app.Test(reqF)
+		if err != nil || respF.StatusCode != http.StatusOK {
+			t.Fatalf("Failed to transition fulfillment to %s: status %d", step, respF.StatusCode)
+		}
+	}
+
+	// 5. Refund Order B with restock: true
+	refundPayload := map[string]interface{}{
+		"reason":  "Pengembalian dana pelanggan disetujui",
+		"restock": true,
+	}
+	refundBytes, _ := json.Marshal(refundPayload)
+	reqRefund := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/commerce/orders/%s/refund", orderIDB), bytes.NewReader(refundBytes))
+	reqRefund.Header.Set("Content-Type", "application/json")
+	respRefund, err := app.Test(reqRefund)
+	if err != nil || respRefund.StatusCode != http.StatusOK {
+		t.Fatalf("Failed to refund order B: status %d", respRefund.StatusCode)
+	}
+
+	var refundRes map[string]interface{}
+	_ = json.NewDecoder(respRefund.Body).Decode(&refundRes)
+	if refundRes["status"] != "REFUNDED" {
+		t.Errorf("Expected status REFUNDED, got %v", refundRes["status"])
+	}
+
+	// 6. Test GET /api/v1/commerce/orders listing
+	reqList := httptest.NewRequest(http.MethodGet, "/api/v1/commerce/orders?status=ALL", nil)
+	respList, err := app.Test(reqList)
+	if err != nil || respList.StatusCode != http.StatusOK {
+		t.Fatalf("Failed to get orders list: status %d", respList.StatusCode)
+	}
+	var listRes map[string]interface{}
+	_ = json.NewDecoder(respList.Body).Decode(&listRes)
+	orders, ok := listRes["data"].([]interface{})
+	if !ok || len(orders) == 0 {
+		t.Errorf("Expected list of orders to contain entries, got %v", listRes)
 	}
 }
