@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { OverviewView } from './views/OverviewView';
+import { OrdersView } from './views/OrdersView';
 import { BatchesFEFOView } from './views/BatchesFEFOView';
 import { InventoryView } from './views/InventoryView';
 import { POSShiftsView } from './views/POSShiftsView';
@@ -45,6 +46,7 @@ export default function App() {
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
             {activeTab === 'overview' && <OverviewView />}
+            {activeTab === 'orders' && <OrdersView />}
             {activeTab === 'fefo' && <BatchesFEFOView />}
             {activeTab === 'inventory' && <InventoryView />}
             {activeTab === 'pos_shifts' && <POSShiftsView />}
