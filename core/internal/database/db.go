@@ -37,15 +37,21 @@ func Connect(ctx context.Context, databaseURL string) (*Database, error) {
 	}
 
 	log.Println("[Database] Successfully connected to PostgreSQL (Neon)")
+
+	// Run pending migrations automatically
+	if err := RunMigrations(ctx, pool); err != nil {
+		log.Printf("[Database] Warning: Migration runner returned: %v", err)
+	}
+
 	return &Database{Pool: pool}, nil
 }
 
 func (d *Database) IsConnected() bool {
-	return d.Pool != nil
+	return d != nil && d.Pool != nil
 }
 
 func (d *Database) Close() {
-	if d.Pool != nil {
+	if d != nil && d.Pool != nil {
 		d.Pool.Close()
 	}
 }

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "e0000000-0000-0000-0000-000000000001",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "email": "admin@berryfresh.com",
+    "phone": "08111000001",
+    "password_hash": "$2a$10$u25YE570Rs4r28jgtBeHqeDlmTpJ7Z90L.G8ELiFAZM.GM6nXUeK2",
+    "full_name": "Hendra Wijaya",
+    "status": "ACTIVE",
+    "assigned_store_id": null,
+    "assigned_facility_id": null
+  },
+  {
+    "id": "e0000000-0000-0000-0000-000000000002",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "email": "cashier@berryfresh.com",
+    "phone": "08111000002",
+    "password_hash": "$2a$10$Hb2jrvpUxpMH5lXOIGype.mXFUxHU7rMJYA12PAMHDr9S.VooO4Rq",
+    "full_name": "Siti Rahma",
+    "status": "ACTIVE",
+    "assigned_store_id": "c0000000-0000-0000-0000-000000000001",
+    "assigned_facility_id": null
+  },
+  {
+    "id": "e0000000-0000-0000-0000-000000000003",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "email": "manager@berryfresh.com",
+    "phone": "08111000003",
+    "password_hash": "$2a$10$bqPvpK7JYaNvFslIoeZo2euxA0AuBB7R1g6ypAgrAmXBFdtL50jfO",
+    "full_name": "Dewi Lestari",
+    "status": "ACTIVE",
+    "assigned_store_id": "c0000000-0000-0000-0000-000000000001",
+    "assigned_facility_id": null
+  },
+  {
+    "id": "e0000000-0000-0000-0000-000000000004",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "email": "warehouse@berryfresh.com",
+    "phone": "08111000004",
+    "password_hash": "$2a$10$oCyCwdCC4kPRU37FYnOvy.pfXnD5Vj6Hs4qFKCQt70P3AUghlov6O",
+    "full_name": "Budi Santoso",
+    "status": "ACTIVE",
+    "assigned_store_id": null,
+    "assigned_facility_id": "b0000000-0000-0000-0000-000000000001"
+  },
+  {
+    "id": "e0000000-0000-0000-0000-000000000005",
+    "organization_id": "a0000000-0000-0000-0000-000000000001",
+    "email": "customer@berryfresh.com",
+    "phone": "08111000005",
+    "password_hash": "$2a$10$WofgxV3pmHg/OyUW5s9TxuIAiJUxVf/jlNEl0CiW.SDPPSc/RiM2i",
+    "full_name": "Rina Kusuma",
+    "status": "ACTIVE",
+    "assigned_store_id": null,
+    "assigned_facility_id": null
+  }
+]

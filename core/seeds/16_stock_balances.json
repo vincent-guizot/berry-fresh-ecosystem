@@ -1,0 +1,9 @@
+[
+  { "facility_code": "WH-JKT-MAIN", "store_code": null, "batch_code": "BF-20261108-STR-01A", "quantity_on_hand_base": 180, "quantity_reserved_base": 0 },
+  { "facility_code": "WH-JKT-MAIN", "store_code": null, "batch_code": "BF-20261108-STR-02B", "quantity_on_hand_base": 350, "quantity_reserved_base": 0 },
+  { "facility_code": "WH-JKT-MAIN", "store_code": null, "batch_code": "BF-20261108-SWC-01", "quantity_on_hand_base": 145500, "quantity_reserved_base": 0 },
+  { "facility_code": "WH-JKT-MAIN", "store_code": null, "batch_code": "BF-20261105-BLU-01", "quantity_on_hand_base": 220, "quantity_reserved_base": 0 },
+  { "facility_code": null, "store_code": "STORE-JKT-01", "batch_code": "BF-20261108-STR-01A", "quantity_on_hand_base": 64, "quantity_reserved_base": 0 },
+  { "facility_code": null, "store_code": "STORE-JKT-01", "batch_code": "BF-20261108-SWC-01", "quantity_on_hand_base": 18200, "quantity_reserved_base": 0 },
+  { "facility_code": null, "store_code": "STORE-JKT-01", "batch_code": "BF-20261105-BLU-01", "quantity_on_hand_base": 35, "quantity_reserved_base": 0 }
+]

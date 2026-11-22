@@ -1,0 +1,7 @@
+[
+  { "user_email": "admin@berryfresh.com", "role_code": "ADMIN" },
+  { "user_email": "cashier@berryfresh.com", "role_code": "CASHIER" },
+  { "user_email": "manager@berryfresh.com", "role_code": "MANAGER" },
+  { "user_email": "warehouse@berryfresh.com", "role_code": "WAREHOUSE" },
+  { "user_email": "customer@berryfresh.com", "role_code": "CUSTOMER" }
+]

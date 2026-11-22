@@ -1,0 +1,46 @@
+[
+  {
+    "title": "Sains Rantai Dingin: Mengapa Suhu 2°C Kritis untuk Kesegaran Buah Berry",
+    "slug": "cold-chain-science-berries",
+    "fruitType": "Strawberries",
+    "category": "Cold Chain & Logistics",
+    "content": "Buah berry seperti stroberi, rasberi, dan bluberi memiliki laju respirasi yang sangat tinggi setelah dipanen. Menjaga suhu di 2°C memperlambat kehilangan kadar air dan mencegah pembusukan dini oleh jamur Botrytis cinerea.",
+    "readTimeMinutes": 5,
+    "likes": 28,
+    "author": "Dr. Rian Pradana",
+    "publishedAt": "2026-11-01T08:00:00Z"
+  },
+  {
+    "title": "Standar Kemanisan Brix 9°+ pada Stroberi Varietas Albion Dataran Tinggi",
+    "slug": "brix-sweetness-albion-strawberries",
+    "fruitType": "Strawberries",
+    "category": "Agronomy & Quality",
+    "content": "Kandungan gula pada stroberi diukur menggunakan refraktometer dalam skala Brix (°Bx). Varietas Albion yang ditanam pada elevasi 1.450 mdpl di Ciwidey mampu mencapai tingkat kemanisan optimal 9.4° hingga 10.2° Brix.",
+    "readTimeMinutes": 4,
+    "likes": 42,
+    "author": "Ir. Siti Nurhaliza",
+    "publishedAt": "2026-11-03T10:30:00Z"
+  },
+  {
+    "title": "Budidaya Bluberi Varietas Duke & Emerald di Kawasan Vulkanik Batu",
+    "slug": "blueberry-farming-batu-highland",
+    "fruitType": "Blueberries",
+    "category": "Farm Operations",
+    "content": "Tanaman bluberi membutuhkan tanah dengan pH asam berkisar antara 4.5 hingga 5.2. Kawasan lereng Gunung Panderman di Batu Jawa Timur menyediakan kondisi mikroklimat ideal untuk varietas Duke dan Emerald.",
+    "readTimeMinutes": 6,
+    "likes": 35,
+    "author": "Budi Hartanto",
+    "publishedAt": "2026-11-05T14:15:00Z"
+  },
+  {
+    "title": "Manfaat Kesehatan Antosianin: Superfood Antioksidan Alami",
+    "slug": "anthocyanins-health-benefits-berries",
+    "fruitType": "Blackberries",
+    "category": "Nutrition & Wellness",
+    "content": "Pigmen warna biru dan ungu tua pada bluberi dan blakberi berasal dari antosianin, senyawa polifenol yang memiliki khasiat kuat menangkal radikal bebas dan mendukung kesehatan kardiovaskular.",
+    "readTimeMinutes": 4,
+    "likes": 51,
+    "author": "dr. Amanda Kartika, Sp.GK",
+    "publishedAt": "2026-11-07T09:00:00Z"
+  }
+]

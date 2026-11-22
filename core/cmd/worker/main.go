@@ -26,8 +26,9 @@ func main() {
 	}
 	defer db.Close()
 
-	outboxSvc := outbox.NewOutboxService(db.Pool)
+	outboxSvc := outbox.NewOutboxService(db.Pool, cfg.RabbitMQURL, cfg.RabbitMQExchange)
 	outboxSvc.StartWorker(ctx, 2*time.Second)
+	defer outboxSvc.Close()
 
 	log.Printf("[Worker] Listening to RabbitMQ events and relaying outbox messages...")
 

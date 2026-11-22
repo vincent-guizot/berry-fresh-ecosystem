@@ -86,6 +86,14 @@ exports.getArticleBySlug = async (req, res) => {
 exports.createArticle = async (req, res) => {
   try {
     const { title, excerpt, content, coverImage, category, fruitType, tags, readTimeMinutes, author } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ success: false, message: 'Title and content are required' });
+    }
+
+    if (process.env.NODE_ENV === 'production' && !getDbStatus()) {
+      return res.status(503).json({ success: false, message: 'Database service unavailable in production mode' });
+    }
+
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
     const newArticleData = {
