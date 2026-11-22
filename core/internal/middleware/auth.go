@@ -41,6 +41,7 @@ func RequireAuth(jwtSecret string) fiber.Handler {
 		}
 
 		c.Locals("user_id", claims.UserID)
+		c.Locals("email", claims.Email)
 		c.Locals("role", claims.Role)
 		c.Locals("organization_id", claims.OrganizationID)
 		c.Locals("store_id", claims.StoreID)

@@ -1,10 +1,12 @@
 package identity
 
 import (
+	"context"
 	"time"
 
 	"berryfresh/core/internal/config"
 	"berryfresh/core/internal/database"
+	"berryfresh/core/internal/middleware"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
@@ -44,72 +46,144 @@ type UserInfo struct {
 
 func (h *AuthHandler) Login(c fiber.Ctx) error {
 	var req LoginRequest
-	if err := c.Bind().Body(&req); err != nil {
+	if err := c.Bind().Body(&req); err != nil || req.Email == "" || req.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Invalid request body",
+			"message": "Email and password are required",
 		})
 	}
 
-	// Default demo accounts with role resolution
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
 	var user UserInfo
-	switch req.Email {
-	case "admin@berryfresh.com":
-		user = UserInfo{ID: "usr-admin-01", Email: req.Email, FullName: "Hendra Wijaya", Role: "ADMIN", OrganizationID: "org-bf-hq", StoreID: ""}
-	case "cashier@berryfresh.com":
-		user = UserInfo{ID: "usr-pos-01", Email: req.Email, FullName: "Siti Rahma", Role: "CASHIER", OrganizationID: "org-bf-hq", StoreID: "store-jkt-central"}
-	case "warehouse@berryfresh.com":
-		user = UserInfo{ID: "usr-wh-01", Email: req.Email, FullName: "Bambang Tri", Role: "WAREHOUSE", OrganizationID: "org-bf-hq", StoreID: ""}
-	case "manager@berryfresh.com":
-		user = UserInfo{ID: "usr-mgr-01", Email: req.Email, FullName: "Dewi Anggraini", Role: "MANAGER", OrganizationID: "org-bf-hq", StoreID: "store-jkt-central"}
-	default:
-		// Accept demo login for any email with default role
-		user = UserInfo{ID: "usr-demo-01", Email: req.Email, FullName: "Berry Fresh Operator", Role: "MANAGER", OrganizationID: "org-bf-hq", StoreID: "store-jkt-central"}
+	var passwordHash string
+	var orgID, storeID *string
+
+	if h.db != nil && h.db.Pool != nil {
+		query := `
+			SELECT u.id, u.email, u.full_name, u.password_hash, 
+			       COALESCE(r.code, 'CUSTOMER') as role,
+			       u.organization_id::text, u.assigned_store_id::text
+			FROM identity.users u
+			LEFT JOIN identity.user_roles ur ON ur.user_id = u.id
+			LEFT JOIN identity.roles r ON r.id = ur.role_id
+			WHERE u.email = $1 AND u.status = 'ACTIVE'
+			LIMIT 1
+		`
+		err := h.db.Pool.QueryRow(ctx, query, req.Email).Scan(
+			&user.ID, &user.Email, &user.FullName, &passwordHash,
+			&user.Role, &orgID, &storeID,
+		)
+
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"message": "Invalid email or password",
+			})
+		}
+
+		if orgID != nil {
+			user.OrganizationID = *orgID
+		}
+		if storeID != nil {
+			user.StoreID = *storeID
+		}
+
+		// Verify bcrypt password
+		if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"message": "Invalid email or password",
+			})
+		}
+	} else {
+		// Mock fallback for isolated development without database
+		switch req.Email {
+		case "admin@berryfresh.com":
+			if req.Password != "admin123" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "Invalid credentials"})
+			}
+			user = UserInfo{ID: "e0000000-0000-0000-0000-000000000001", Email: req.Email, FullName: "Hendra Wijaya", Role: "ADMIN", OrganizationID: "a0000000-0000-0000-0000-000000000001"}
+		case "cashier@berryfresh.com":
+			if req.Password != "pos123" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "Invalid credentials"})
+			}
+			user = UserInfo{ID: "e0000000-0000-0000-0000-000000000002", Email: req.Email, FullName: "Siti Rahma", Role: "CASHIER", OrganizationID: "a0000000-0000-0000-0000-000000000001", StoreID: "c0000000-0000-0000-0000-000000000001"}
+		case "manager@berryfresh.com":
+			if req.Password != "mgr123" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"success": false, "message": "Invalid credentials"})
+			}
+			user = UserInfo{ID: "e0000000-0000-0000-0000-000000000003", Email: req.Email, FullName: "Dewi Lestari", Role: "MANAGER", OrganizationID: "a0000000-0000-0000-0000-000000000001", StoreID: "c0000000-0000-0000-0000-000000000001"}
+		default:
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"message": "User not found or database not available",
+			})
+		}
 	}
 
-	// Generate Access Token (15 mins)
-	accessClaims := jwt.MapClaims{
-		"user_id":         user.ID,
-		"email":           user.Email,
-		"role":            user.Role,
-		"organization_id": user.OrganizationID,
-		"store_id":        user.StoreID,
-		"exp":             time.Now().Add(15 * time.Minute).Unix(),
+	// Issue JWT token (valid for 24 hours)
+	expiresIn := int64(86400)
+	claims := middleware.UserClaims{
+		UserID:         user.ID,
+		Email:          user.Email,
+		Role:           user.Role,
+		OrganizationID: user.OrganizationID,
+		StoreID:        user.StoreID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "Berry-Fresh-Core",
+			Subject:   user.ID,
+		},
 	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	tokenString, err := accessToken.SignedString([]byte(h.cfg.JWTAccessSecret))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.cfg.JWTAccessSecret))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Failed to issue access token"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to generate authentication token",
+		})
 	}
-
-	// Generate Refresh Token (7 days)
-	refreshClaims := jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
-	}
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshString, _ := refreshToken.SignedString([]byte(h.cfg.JWTRefreshSecret))
 
 	return c.JSON(LoginResponse{
 		Success:      true,
 		AccessToken:  tokenString,
-		RefreshToken: refreshString,
-		ExpiresIn:    900,
+		RefreshToken: tokenString,
+		ExpiresIn:    expiresIn,
 		User:         user,
 	})
 }
 
 func (h *AuthHandler) Me(c fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"success":         true,
-		"user_id":         c.Locals("user_id"),
-		"role":            c.Locals("role"),
-		"organization_id": c.Locals("organization_id"),
-		"store_id":        c.Locals("store_id"),
-	})
-}
+	userID, _ := c.Locals("user_id").(string)
+	email, _ := c.Locals("email").(string)
+	role, _ := c.Locals("role").(string)
+	orgID, _ := c.Locals("organization_id").(string)
+	storeID, _ := c.Locals("store_id").(string)
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	return string(bytes), err
+	fullName := "Authenticated User"
+	if h.db != nil && h.db.Pool != nil && userID != "" {
+		ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
+		defer cancel()
+		_ = h.db.Pool.QueryRow(ctx, "SELECT full_name FROM identity.users WHERE id = $1", userID).Scan(&fullName)
+	} else if email == "admin@berryfresh.com" {
+		fullName = "Hendra Wijaya"
+	} else if email == "cashier@berryfresh.com" {
+		fullName = "Siti Rahma"
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"user": UserInfo{
+			ID:             userID,
+			Email:          email,
+			FullName:       fullName,
+			Role:           role,
+			OrganizationID: orgID,
+			StoreID:        storeID,
+		},
+	})
 }
