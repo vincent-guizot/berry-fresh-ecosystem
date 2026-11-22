@@ -8,6 +8,7 @@ import {
   Database,
   ShieldCheck,
   ChevronRight,
+  Truck,
 } from 'lucide-react';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 export const Sidebar: React.FC<Props> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders & Fulfillment', icon: Truck, badge: 'E-Comm' },
     { id: 'fefo', label: 'Batches & FEFO Clocks', icon: Clock, badge: 'Live' },
     { id: 'inventory', label: 'Stock & Shrinkage', icon: Boxes },
     { id: 'pos_shifts', label: 'POS Shifts & Cash', icon: Store },
