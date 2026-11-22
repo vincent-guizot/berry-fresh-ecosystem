@@ -60,7 +60,7 @@ services:
 
   core:
     build:
-      context: ./core
+      context: ./apps/core
       dockerfile: Dockerfile
     container_name: berryfresh_core
     restart: always
@@ -90,7 +90,7 @@ services:
 
   core-worker:
     build:
-      context: ./core
+      context: ./apps/core
       dockerfile: Dockerfile
     container_name: berryfresh_worker
     restart: always
@@ -107,7 +107,7 @@ services:
 
   shop:
     build:
-      context: ./shop
+      context: ./apps/shop
       dockerfile: Dockerfile
     container_name: berryfresh_shop
     restart: always
@@ -121,7 +121,7 @@ services:
 
   studio:
     build:
-      context: ./studio
+      context: ./apps/studio
       dockerfile: Dockerfile
     container_name: berryfresh_studio
     restart: always
@@ -130,7 +130,7 @@ services:
 
   pos:
     build:
-      context: ./pos
+      context: ./apps/pos
       dockerfile: Dockerfile
     container_name: berryfresh_pos
     restart: always
@@ -139,7 +139,7 @@ services:
 
   articles-api:
     build:
-      context: ./articles/server
+      context: ./apps/articles/server
       dockerfile: Dockerfile
     container_name: berryfresh_articles_api
     restart: always
@@ -154,7 +154,7 @@ services:
 
   articles-ui:
     build:
-      context: ./articles/ui
+      context: ./apps/articles/ui
       dockerfile: Dockerfile
     container_name: berryfresh_articles_ui
     restart: always

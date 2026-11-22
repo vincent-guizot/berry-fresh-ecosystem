@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.2.0] - 2026-11-22
+
+### 🎯 Highlight: Restrukturisasi 3 Folder Utama (apps, docs, panduan-instalasi) & Port 1000 Local PostgreSQL
+
+Refaktor struktur repositori secara komprehensif menjadi 3 folder terorganisir untuk mempermudah navigasi, standardisasi port database lokal pada port 1000, serta penulisan dokumentasi dan panduan instalasi lengkap dalam Bahasa Indonesia.
+
+### 🚀 Changed & Reorganized
+* **Restrukturisasi 3 Folder Utama:**
+  - `apps/`: Menampung seluruh aplikasi ekosistem (`apps/core`, `apps/shop`, `apps/studio`, `apps/pos`, `apps/articles`).
+  - `docs/`: Dokumentasi teknis arsitektur, diagram alur checkout, diagram relasi database (ERD), dan sinkronisasi offline POS.
+  - `panduan-instalasi/`: Pusat panduan instalasi berbahasa Indonesia (`PANDUAN_INSTALASI_NON_IT.md`, `PANDUAN_BACKEND.md`, `PANDUAN_FRONTEND.md`, serta skrip 1-klik `setup-db.bat` dan `setup-db.ps1`).
+* **Konfigurasi PostgreSQL Port 1000:**
+  - Standardisasi koneksi basis data default pada port `1000` (`postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable`).
+  - Pembaruan konfigurasi di `apps/core/internal/config/config.go`, `cmd/seed/main.go`, `integration_test.go`, `e2e_test.go`, `.env.example`, dan `docker-compose.yml`.
+  - Pembaruan skrip otomatis `setup-db.bat` dan `setup-db.ps1` untuk mendeteksi `apps/core` dan port 1000.
+* **Pembaruan Dokumentasi README:**
+  - Pembaruan root `README.md` dan pembuatan `README.md` terdedikasi di setiap aplikasi (`apps/core/README.md`, `apps/shop/README.md`, `apps/studio/README.md`, `apps/pos/README.md`, `apps/articles/README.md`, `panduan-instalasi/README.md`).
+
+---
+
 ## [v2.1.0] - 2026-11-22
 
 ### 🎯 Highlight: Commerce Lifecycle, FEFO Sweeper, Order Cancellation, Refund Restock Policy, and Cold-Chain Tracking

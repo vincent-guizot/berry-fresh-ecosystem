@@ -5,10 +5,11 @@ Ekosistem Berry Fresh memiliki 4 aplikasi frontend mandiri yang terhubung langsu
 
 ```
 berry-fresh-ecosystem/
-├── shop/             # [Port 3000] Toko Online E-Commerce Pelanggan (Next.js 15 + React 19)
-├── studio/           # [Port 3001] Dashboard Operasional Bisnis & CMS (Vite + React 19)
-├── pos/              # [Port 3002] Aplikasi Kasir Toko Fisik / POS (Vite + React 19)
-└── articles/ui/      # [Port 5173] Portal Pengetahuan & Edukasi Sains Rantai Dingin (Vite + MUI v6)
+├── apps/
+│   ├── shop/             # [Port 3000] Toko Online E-Commerce Pelanggan (Next.js 15 + React 19)
+│   ├── studio/           # [Port 3001] Dashboard Operasional Bisnis & CMS (Vite + React 19)
+│   ├── pos/              # [Port 3002] Aplikasi Kasir Toko Fisik / POS (Vite + React 19)
+│   └── articles/ui/      # [Port 5173] Portal Pengetahuan & Edukasi Sains Rantai Dingin (Vite + MUI v6)
 ```
 
 ---
@@ -26,7 +27,7 @@ berry-fresh-ecosystem/
   - Simulasi konfirmasi pembayaran seketika yang langsung memperbarui status order menjadi `PAID` dan memotong stok gudang secara permanen.
 - **Cara Menjalankan:**
   ```bash
-  cd shop
+  cd apps/shop
   npm install
   npm run dev
   ```
@@ -46,7 +47,7 @@ berry-fresh-ecosystem/
   - **Architecture View:** Visualisasi interaktif 16 skema domain dan arsitektur event outbox.
 - **Cara Menjalankan:**
   ```bash
-  cd studio
+  cd apps/studio
   npm install
   npm run dev
   ```
@@ -66,7 +67,7 @@ berry-fresh-ecosystem/
   - Format cetak struk kasir termal standar POS.
 - **Cara Menjalankan:**
   ```bash
-  cd pos
+  cd apps/pos
   npm install
   npm run dev
   ```
@@ -74,7 +75,7 @@ berry-fresh-ecosystem/
 
 ---
 
-## 4. 📚 Articles Knowledge Hub (`articles/ui/`)
+## 4. 📚 Articles Knowledge Hub (`apps/articles/ui/`)
 **Target Pengguna:** Edukasi budidaya agrikultur dan pembaca umum.
 - **Teknologi:** Vite, React 18, Material UI (MUI v6), Emotion.
 - **Port:** `http://localhost:5173`
@@ -84,7 +85,7 @@ berry-fresh-ecosystem/
   - Formulir penerbitan artikel baru langsung ke database.
 - **Cara Menjalankan:**
   ```bash
-  cd articles/ui
+  cd apps/articles/ui
   npm install
   npm run dev
   ```
@@ -97,7 +98,7 @@ Masing-masing aplikasi membaca URL Core API melalui file konfigurasi lingkungan:
 
 | Aplikasi | File Konfigurasi | Variabel Lingkungan | Nilai Default |
 |---|---|---|---|
-| **Shop** | `shop/.env.local` | `NEXT_PUBLIC_CORE_API_URL` | `http://localhost:8080` |
-| **Studio** | `studio/.env` | `VITE_CORE_API_URL` | `http://localhost:8080` |
-| **POS** | `pos/.env` | `VITE_CORE_API_URL` | `http://localhost:8080` |
-| **Articles UI** | `articles/ui/.env` | `VITE_ARTICLES_API_URL` | `http://localhost:5000` |
+| **Shop** | `apps/shop/.env.local` | `NEXT_PUBLIC_CORE_API_URL` | `http://localhost:8080` |
+| **Studio** | `apps/studio/.env` | `VITE_CORE_API_URL` | `http://localhost:8080` |
+| **POS** | `apps/pos/.env` | `VITE_CORE_API_URL` | `http://localhost:8080` |
+| **Articles UI** | `apps/articles/ui/.env` | `VITE_ARTICLES_API_URL` | `http://localhost:5000` |

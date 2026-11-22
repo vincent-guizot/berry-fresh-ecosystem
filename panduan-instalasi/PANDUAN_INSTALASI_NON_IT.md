@@ -30,9 +30,10 @@ Sebelum memulai, pastikan komputer Anda telah terpasang 3 aplikasi gratis beriku
    - Unduh installer untuk Windows (file `.msi`).
    - Buka installer, klik **Next** sampai selesai.
 
-3. **PostgreSQL (Tempat Penyimpanan Data):**
+3. **PostgreSQL (Tempat Penyimpanan Data - Port 1000):**
    - Buka website: [https://www.postgresql.org/download/windows/](https://www.postgresql.org/download/windows/)
    - Unduh versi 16 atau yang terbaru.
+   - Konfigurasi service PostgreSQL lokal Anda pada **Port 1000** (atau sesuaikan file `.env`).
    - Saat proses instalasi, Anda akan diminta memasukkan password untuk user `postgres` (misalnya isi: `admin`). Ingat password ini!
 
 ---
@@ -56,8 +57,8 @@ Kami telah membuatkan script pintar otomatis sehingga Anda tidak perlu mengetik 
 
 Back-End harus dinyalakan terlebih dahulu agar Toko Online dan Kasir dapat mengambil data:
 
-1. Buka folder **`core`** di dalam folder proyek.
-2. Di dalam folder `core`, tekan tombol keyboard `Shift` + **Klik Kanan** di area kosong, lalu pilih **"Open in Terminal"** atau **"Open PowerShell window here"**.
+1. Buka folder **`apps/core`** di dalam folder proyek.
+2. Di dalam folder `apps/core`, tekan tombol keyboard `Shift` + **Klik Kanan** di area kosong, lalu pilih **"Open in Terminal"** atau **"Open PowerShell window here"**.
 3. Ketik perintah berikut lalu tekan **Enter**:
    ```bash
    go run ./cmd/api
@@ -75,7 +76,7 @@ Back-End harus dinyalakan terlebih dahulu agar Toko Online dan Kasir dapat menga
 Sekarang, Anda bisa memilih aplikasi mana yang ingin Anda buka di browser:
 
 ### A. Membuka Toko Online Pelanggan (Shop)
-1. Buka jendela terminal baru di folder **`shop`**.
+1. Buka jendela terminal baru di folder **`apps/shop`**.
 2. Ketik perintah:
    ```bash
    npm run dev
@@ -86,7 +87,7 @@ Sekarang, Anda bisa memilih aplikasi mana yang ingin Anda buka di browser:
 ---
 
 ### B. Membuka Mesin Kasir Toko (POS)
-1. Buka jendela terminal baru di folder **`pos`**.
+1. Buka jendela terminal baru di folder **`apps/pos`**.
 2. Ketik perintah:
    ```bash
    npm run dev
@@ -102,7 +103,7 @@ Sekarang, Anda bisa memilih aplikasi mana yang ingin Anda buka di browser:
 ---
 
 ### C. Membuka Dashboard Manajemen Operasional (Studio)
-1. Buka jendela terminal baru di folder **`studio`**.
+1. Buka jendela terminal baru di folder **`apps/studio`**.
 2. Ketik perintah:
    ```bash
    npm run dev
@@ -134,7 +135,7 @@ Sistem sudah dilengkapi akun uji coba yang langsung aktif:
 
 ### 1. Muncul pesan "password authentication failed for user 'postgres'" saat setup database
 - **Penyebab:** Password database PostgreSQL Anda berbeda dengan password standar.
-- **Solusi:** Buka file `core/.env` menggunakan Notepad, lalu cari baris `DATABASE_URL=postgres://postgres:admin@localhost:5432/...`. Ganti kata `admin` dengan password PostgreSQL yang Anda buat saat instalasi.
+- **Solusi:** Buka file `apps/core/.env` atau `.env` root menggunakan Notepad, lalu cari baris `DATABASE_URL=postgres://postgres:admin@localhost:1000/...`. Ganti kata `admin` dengan password PostgreSQL yang Anda buat saat instalasi, dan pastikan port sesuai (default `1000`).
 
 ### 2. Apakah internet harus menyala?
 - **Tidak harus!** Seluruh sistem ini berjalan secara lokal di komputer laptop Anda (`localhost`). Anda dapat menggunakannya bahkan saat sedang offline (tanpa koneksi internet).

@@ -29,7 +29,7 @@ func LoadConfig() *Config {
 		AppName:          getEnv("APP_NAME", "Berry Fresh Core"),
 		AppEnv:           getEnv("APP_ENV", "development"),
 		AppPort:          getEnv("APP_PORT", "8080"),
-		DatabaseURL:      getEnv("DATABASE_URL", "postgres://berry:fresh_secret@localhost:5432/berryfresh_db?sslmode=disable"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable"),
 		RabbitMQURL:      getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		RabbitMQExchange: getEnv("RABBITMQ_EXCHANGE", "berryfresh.events"),
 		RedisURL:         getEnv("REDIS_URL", "redis://localhost:6379/0"),

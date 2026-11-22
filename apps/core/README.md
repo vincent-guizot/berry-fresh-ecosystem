@@ -25,24 +25,24 @@ Core API mengelola 16 skema domain dalam satu sistem modular monolith:
 
 ## 🚀 Persyaratan Sistem
 - **Go:** versi 1.24 atau lebih baru
-- **PostgreSQL:** versi 16+ (lokal pada port 5432 atau cloud Neon)
+- **PostgreSQL:** versi 16+ (lokal pada port 1000 atau cloud Neon)
 - **RabbitMQ:** (opsional, pada port 5672)
 
 ---
 
 ## ⚡ Setup Database, Migrasi & Seeder JSON
 
-Kami menyediakan script terpadu yang otomatis memeriksa keberadaan database `berryfresh_db`, menjalankan seluruh migrasi skema `000001` - `000007`, serta mengimpor data awal dari file JSON di `core/seeds/`:
+Kami menyediakan script terpadu yang otomatis memeriksa keberadaan database `berryfresh_db` pada PostgreSQL lokal (Port 1000), menjalankan seluruh migrasi skema `000001` - `000009`, serta mengimpor data awal dari file JSON di `apps/core/seeds/`:
 
 ```bash
-# Jalankan seeder otomatis
-cd core
+# Jalankan seeder otomatis dari direktori Core
+cd apps/core
 go run ./cmd/seed/main.go
 ```
 
-Atau cukup klik dua kali file `setup-db.bat` di root direktori.
+Atau cukup klik dua kali file `setup-db.bat` di root direktori (atau di folder `panduan-instalasi/`).
 
-### Daftar File Seeder JSON (`core/seeds/`):
+### Daftar File Seeder JSON (`apps/core/seeds/`):
 | File JSON | Target Tabel Database | Keterangan |
 |---|---|---|
 | `01_organizations.json` | `governance.organizations` | Profil holding perusahaan |
@@ -70,7 +70,7 @@ Atau cukup klik dua kali file `setup-db.bat` di root direktori.
 
 ### 1. Menjalankan Core API (Port 8080)
 ```bash
-cd core
+cd apps/core
 go run ./cmd/api
 ```
 Server akan aktif di `http://localhost:8080`.
@@ -78,7 +78,7 @@ Endpoint cek kesehatan: `http://localhost:8080/health`.
 
 ### 2. Menjalankan Transactional Outbox Worker
 ```bash
-cd core
+cd apps/core
 go run ./cmd/worker
 ```
 Worker akan mem-polling tabel `audit.outbox_events` setiap 3 detik dan menerbitkan event ke RabbitMQ.
@@ -87,8 +87,8 @@ Worker akan mem-polling tabel `audit.outbox_events` setiap 3 detik dan menerbitk
 
 ## 🧪 Menjalankan Automated Test
 ```bash
-cd core
-# Menjalankan seluruh pengujian unit, integrasi, dan E2E contract
+cd apps/core
+# Menjalankan seluruh pengujian unit, integrasi, dan E2E contract terhadap PostgreSQL Port 1000
 go test -v ./...
 ```
 
@@ -112,8 +112,13 @@ go test -v ./...
   - `POST /api/v1/retail/shifts/open`
   - `POST /api/v1/retail/shifts/close`
   - `POST /api/v1/retail/sales/checkout` (idempotent via `receipt_number`)
-- **Commerce:**
-  - `POST /api/v1/commerce/orders/checkout` (kalkulasi harga & reservasi stok server-side)
+- **Commerce & Fulfillment:**
+  - `GET /api/v1/commerce/orders` (daftar pesanan e-commerce dengan filter status & pencarian)
+  - `POST /api/v1/commerce/orders/checkout` (kalkulasi harga, ongkir dingin Rp 25.000, & reservasi stok server-side)
   - `POST /api/v1/commerce/orders/:id/pay` (konfirmasi pembayaran)
+  - `POST /api/v1/commerce/orders/:id/cancel` (pembatalan order unpaid & pelepasan hold kuantitas reservasi)
+  - `POST /api/v1/commerce/orders/:id/refund` (refund order paid dengan opsi restock vs spoilage write-off)
+  - `PATCH /api/v1/commerce/orders/:id/fulfillment` (tahapan logistik PACKING -> IN_TRANSIT -> DELIVERED)
+  - `GET /api/v1/commerce/orders/:orderNumber` (detail pesanan, lot FEFO, dan audit status)
 - **Analytics:**
   - `GET /api/v1/analytics/overview` (telemetri live Studio)

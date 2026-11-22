@@ -10,7 +10,7 @@ import (
 func TestPostgreSQLDatabaseIntegration(t *testing.T) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:admin@localhost:5432/berryfresh_db?sslmode=disable"
+		dbURL = "postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

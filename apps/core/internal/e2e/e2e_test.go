@@ -101,7 +101,7 @@ func initTestEnv(t *testing.T) (*config.Config, *database.Database, *fiber.App, 
 	cfg := config.LoadConfig()
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:admin@localhost:5432/berryfresh_db?sslmode=disable"
+		dbURL = "postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable"
 	}
 	cfg.DatabaseURL = dbURL
 

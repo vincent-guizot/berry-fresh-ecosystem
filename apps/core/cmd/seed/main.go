@@ -25,7 +25,7 @@ func main() {
 		dbURL = cfg.DatabaseURL
 	}
 	if dbURL == "" {
-		dbURL = "postgres://postgres:admin@localhost:5432/berryfresh_db?sslmode=disable"
+		dbURL = "postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)

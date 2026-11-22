@@ -5,11 +5,11 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?style=flat&logo=vite)](https://vitejs.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Port_1000-336791?style=flat&logo=postgresql)](https://www.postgresql.org/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-FF6600?style=flat&logo=rabbitmq)](https://www.rabbitmq.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![Docker](https://img.shields.io/badge/Docker_Compose-11_Services-2496ED?style=flat&logo=docker)](https://www.docker.com/)
-[![Automated Tests](https://img.shields.io/badge/E2E_&_Unit_Tests-100%25_Passing-brightgreen?style=flat)](core/internal/e2e/e2e_test.go)
+[![Automated Tests](https://img.shields.io/badge/E2E_&_Unit_Tests-100%25_Passing-brightgreen?style=flat)](apps/core/internal/e2e/e2e_test.go)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **Berry Good Business. Freshness Connected.**  
@@ -22,26 +22,38 @@ An integrated digital ecosystem connecting the entire agricultural and fruit dis
 
 ## 🏛 Ecosystem Architecture Overview
 
-Berry Fresh is organized in a decoupled modular structure comprising 5 dedicated applications and infrastructure services:
+Repositori Berry Fresh distrukturisasi rapi ke dalam **3 folder utama**:
 
 ```
 berry-fresh-ecosystem/
-├── core/             # Centralized Backend Modular Monolith (Go 1.24 + Fiber v3 + PostgreSQL 16 + RabbitMQ + Outbox Worker)
-├── shop/             # Customer E-Commerce Application (Next.js 15 + React 19 + TypeScript + Tailwind CSS)
-├── studio/           # Enterprise Operations & CMS Dashboard (Vite + React 19 + TypeScript + Tailwind CSS)
-├── pos/              # Dedicated Retail Point of Sale Terminal (Vite + React 19 + TypeScript + Tailwind CSS)
-├── articles/         # Agricultural Knowledge & Cold-Chain Science Portal (Node.js/Express/MongoDB + React MUI v6)
-│   ├── server/       # REST API with Express & Mongoose
-│   └── ui/           # React 18 / MUI v6 Frontend
-├── docs/             # Master Architectural Blueprints & Sprint Roadmaps
-└── docker-compose.yml# Multi-container orchestration for all 11 ecosystem services
+├── apps/                         # 📱 SELURUH APLIKASI EKOSISTEM (BACK-END & FRONT-END)
+│   ├── core/                     # Central Modular Monolith (Go 1.24 + PostgreSQL Port 1000 + Outbox Worker)
+│   ├── shop/                     # Customer E-Commerce (Next.js 15 + React 19 + Tailwind CSS)
+│   ├── studio/                   # Enterprise Operations & CMS Dashboard (Vite + React 19 + Tailwind CSS)
+│   ├── pos/                      # Retail Point of Sale Terminal (Vite + React 19 + Catch-Weight + Offline Replay)
+│   └── articles/                 # Agricultural Knowledge Portal (Express + MongoDB + React MUI v6)
+│       ├── server/               # REST API dengan Express & Mongoose
+│       └── ui/                   # React 18 / Material UI v6 Interface
+├── docs/                         # 📑 DOKUMENTASI ARSITEKTUR & BASIS DATA
+│   ├── architecture/             # Diagram Alur Checkout, Arsitektur Sistem, dan Sinkronisasi Offline POS
+│   └── database/                 # Schema DB, ERD Diagram, dan Catatan Query
+├── panduan-instalasi/            # 📚 PANDUAN LENGKAP BAHASA INDONESIA
+│   ├── README.md                 # Katalog Panduan Instalasi
+│   ├── PANDUAN_INSTALASI_NON_IT.md # Panduan Langkah-demi-Langkah untuk Pemula / Non-IT
+│   ├── PANDUAN_BACKEND.md        # Panduan Teknis Go 1.24, PostgreSQL Port 1000, 9 Migrasi & 18 Seeder
+│   ├── PANDUAN_FRONTEND.md       # Panduan Menjalankan 4 Aplikasi Antarmuka Pengguna
+│   ├── setup-db.bat              # Skrip Otomatisasi Database 1-Klik (Windows CMD)
+│   └── setup-db.ps1              # Skrip Otomatisasi Database (PowerShell)
+├── setup-db.bat                  # Pintasan Skrip Database di Root
+├── setup-db.ps1                  # Pintasan Skrip Database di Root
+└── docker-compose.yml            # Multi-container orchestration untuk seluruh 11 services
 ```
 
 ### 📚 Dokumentasi & Panduan Khusus
-- **👤 Untuk Pengguna Pemula / Non-IT:** Baca panduan langkah demi langkah di [`PANDUAN_INSTALASI_NON_IT.md`](PANDUAN_INSTALASI_NON_IT.md).
-- **⚙️ Dokumentasi Khusus Back-End:** Baca arsitektur & endpoint di [`core/README.md`](core/README.md).
-- **🎨 Dokumentasi Khusus Front-End:** Baca panduan aplikasi Shop, Studio, dan POS di [`README_FRONTEND.md`](README_FRONTEND.md).
-- **🌱 Setup Database & Seeder Otomatis:** Cukup jalankan [`setup-db.bat`](setup-db.bat) atau script [`setup-db.ps1`](setup-db.ps1).
+- **👤 Untuk Pengguna Pemula / Non-IT:** Baca panduan langkah demi langkah di [`panduan-instalasi/PANDUAN_INSTALASI_NON_IT.md`](panduan-instalasi/PANDUAN_INSTALASI_NON_IT.md).
+- **⚙️ Panduan Back-End & Database:** Baca arsitektur & panduan teknis di [`panduan-instalasi/PANDUAN_BACKEND.md`](panduan-instalasi/PANDUAN_BACKEND.md) dan [`apps/core/README.md`](apps/core/README.md).
+- **🎨 Panduan Front-End:** Baca panduan aplikasi Shop, Studio, dan POS di [`panduan-instalasi/PANDUAN_FRONTEND.md`](panduan-instalasi/PANDUAN_FRONTEND.md).
+- **🌱 Setup Database & Seeder Otomatis (Port 1000):** Cukup jalankan [`setup-db.bat`](setup-db.bat) atau script [`setup-db.ps1`](setup-db.ps1).
 
 ---
 
@@ -49,15 +61,15 @@ berry-fresh-ecosystem/
 
 | Component | Directory | Technology | Default Port | Description |
 |---|---|---|---|---|
-| **Core API** | `core/` | Go 1.24, Fiber v3, pgx v5 | `http://localhost:8080` | Modular Monolith API with 16 domain schemas & JWT RBAC |
-| **Core Worker** | `core/` | Go 1.24, RabbitMQ (`amqp091-go`) | Background | Transactional Outbox Worker polling pending events |
-| **Shop** | `shop/` | Next.js 15, React 19, TypeScript | `http://localhost:3000` | Customer storefront with server-side pricing & FEFO checkout |
-| **Studio** | `studio/` | Vite, React 19, Tailwind CSS | `http://localhost:3001` | Executive operations overview, FEFO clock, balances & shrinkage write-off |
-| **POS** | `pos/` | Vite, React 19, Tailwind CSS | `http://localhost:3002` | Retail cashier with catch-weight scales, shift audits & offline sync |
-| **Articles UI**| `articles/ui/` | Vite, React, Material UI v6 | `http://localhost:5173` | Cold-chain science reader, publishing, comments & likes |
-| **Articles API**| `articles/server/` | Node.js 24+, Express 4.21, Mongoose | `http://localhost:5000` | Knowledge Hub REST API with MongoDB storage |
-| **PostgreSQL** | Docker / Host | PostgreSQL 16 | `localhost:5432` | Primary database (`berryfresh_db`) across 16 domain schemas |
-| **RabbitMQ** | Docker / Host | RabbitMQ 3.13 Management | `5672` (AMQP) / `15672` (UI) | Message broker with transactional outbox event routing |
+| **Core API** | `apps/core/` | Go 1.24, Fiber v3, pgx v5 | `http://localhost:8080` | Modular Monolith API with 16 domain schemas & JWT RBAC |
+| **Core Worker** | `apps/core/` | Go 1.24, RabbitMQ (`amqp091-go`) | Background | Transactional Outbox Worker polling pending events |
+| **Shop** | `apps/shop/` | Next.js 15, React 19, TypeScript | `http://localhost:3000` | Customer storefront with server-side pricing & FEFO checkout |
+| **Studio** | `apps/studio/` | Vite, React 19, Tailwind CSS | `http://localhost:3001` | Executive operations overview, FEFO clock, balances & shrinkage write-off |
+| **POS** | `apps/pos/` | Vite, React 19, Tailwind CSS | `http://localhost:3002` | Retail cashier with catch-weight scales, shift audits & offline sync |
+| **Articles UI**| `apps/articles/ui/` | Vite, React, Material UI v6 | `http://localhost:5173` | Cold-chain science reader, publishing, comments & likes |
+| **Articles API**| `apps/articles/server/`| Node.js 24+, Express 4.21, Mongoose | `http://localhost:5000` | Knowledge Hub REST API with MongoDB storage |
+| **PostgreSQL** | Host / Dedicated | PostgreSQL 16/17 | `localhost:1000` | Basis data utama (`berryfresh_db`) pada **Port 1000** |
+| **RabbitMQ** | Docker / Host | RabbitMQ 3.13 Management | `5672` / `15672` | Message broker with transactional outbox event routing |
 | **MongoDB** | Docker / Host | MongoDB 7.0 | `localhost:27017` | Document store for Articles Knowledge Hub |
 | **Redis** | Docker / Host | Redis 7.2 | `localhost:6379` | Fast caching and token revocation |
 
@@ -93,15 +105,15 @@ Once running, access:
 
 ---
 
-### Method B: Local Development Setup
+### Method B: Local Development Setup (Port 1000)
 
 #### 1. Prerequisites
 - **Go:** 1.24+
 - **Node.js:** 20+ / 24+ and npm 10+
-- **PostgreSQL:** 16+ running locally on port 5432
-- **RabbitMQ:** running on port 5672 (optional for local mock outbox)
+- **PostgreSQL:** Service aktif di **port 1000** (user: `postgres`, password: `admin` atau sesuaikan `.env`)
+- **RabbitMQ:** running on port 5672 (opsional, Core API memiliki fallback PostgreSQL Outbox)
 
-#### 2. Setup PostgreSQL Database & Migrations
+#### 2. Setup PostgreSQL Database & Migrations (Port 1000)
 
 Anda dapat membuat database, menjalankan 9 skrip migrasi, dan mengisi data awal cukup dengan menjalankan script 1-klik:
 ```bash
@@ -111,11 +123,11 @@ setup-db.bat
 # Atau via PowerShell:
 .\setup-db.ps1
 
-# Atau via Go CLI:
-cd core && go run ./cmd/seed/main.go
+# Atau via Go CLI langsung:
+cd apps/core && go run ./cmd/seed/main.go
 ```
 
-Script ini otomatis memigrasikan 16 skema domain (migrasi `000001` hingga `000009`), mengonfigurasi constraint lifecycle order & refund, serta mengimpor **18 data seeder JSON** dari folder [`core/seeds/`](core/seeds/):
+Script ini otomatis memigrasikan 16 skema domain (migrasi `000001` hingga `000009`), mengonfigurasi constraint lifecycle order & refund, serta mengimpor **18 data seeder JSON** dari folder [`apps/core/internal/database/seeds/data/`](apps/core/internal/database/seeds/data/):
 
 | No | File Seeder JSON | Target Tabel Domain | Keterangan Data Awal |
 |---|---|---|---|
@@ -147,14 +159,13 @@ Akun pengguna yang otomatis aktif setelah seeding:
 
 #### 3. Start Core API Backend
 ```bash
-cd core
-cp .env.example .env # edit DATABASE_URL if needed
+cd apps/core
 go run ./cmd/api
 ```
 
 #### 4. Start Core Outbox Worker (Optional)
 ```bash
-cd core
+cd apps/core
 go run ./cmd/worker
 ```
 
@@ -163,26 +174,26 @@ Open separate terminals for each service:
 
 ```bash
 # Terminal 1: Berry Fresh Shop
-cd shop
+cd apps/shop
 npm install
 npm run dev
 # Running on http://localhost:3000
 
 # Terminal 2: Berry Fresh Studio
-cd studio
+cd apps/studio
 npm install
 npm run dev
 # Running on http://localhost:3001
 
 # Terminal 3: Berry Fresh POS
-cd pos
+cd apps/pos
 npm install
 npm run dev
 # Running on http://localhost:3002
 
 # Terminal 4: Articles Backend & Frontend
-cd articles/server && npm install && npm run dev
-cd articles/ui && npm install && npm run dev
+cd apps/articles/server && npm install && npm run dev
+cd apps/articles/ui && npm install && npm run dev
 ```
 
 ---
@@ -192,9 +203,9 @@ cd articles/ui && npm install && npm run dev
 ### Root / Docker Compose (`.env.example`)
 ```env
 POSTGRES_DB=berryfresh_db
-POSTGRES_USER=berry
-POSTGRES_PASSWORD=fresh_secret
-POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=admin
+POSTGRES_PORT=1000
 
 RABBITMQ_USER=guest
 RABBITMQ_PASSWORD=guest
@@ -202,7 +213,7 @@ RABBITMQ_PORT=5672
 RABBITMQ_MGMT_PORT=15672
 
 CORE_API_PORT=8080
-DATABASE_URL=postgres://berry:fresh_secret@postgres:5432/berryfresh_db?sslmode=disable
+DATABASE_URL=postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable
 RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 JWT_ACCESS_SECRET=berryfresh_jwt_access_secret_2026_super_secure_key
 JWT_REFRESH_SECRET=berryfresh_jwt_refresh_secret_2026_super_secure_key
@@ -212,12 +223,12 @@ VITE_CORE_API_URL=http://localhost:8080
 VITE_ARTICLES_API_URL=http://localhost:5000
 ```
 
-### Core API (`core/.env`)
+### Core API (`apps/core/.env`)
 ```env
 APP_NAME=Berry Fresh Core
 APP_ENV=development
 APP_PORT=8080
-DATABASE_URL=postgres://postgres:admin@localhost:5432/berryfresh_db?sslmode=disable
+DATABASE_URL=postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable
 RABBITMQ_URL=amqp://guest:guest@localhost:5672/
 RABBITMQ_EXCHANGE=berryfresh.events
 REDIS_URL=redis://localhost:6379/0
@@ -302,12 +313,12 @@ Run the comprehensive automated test suites:
 
 ```bash
 # Run all Go tests in Core (Unit, Integration, and Contract E2E)
-cd core
+cd apps/core
 go test -v ./...
 ```
 
 ### Test Suites Included:
-- **E2E Integration Journey (`core/internal/e2e/e2e_test.go`):**
+- **E2E Integration Journey (`apps/core/internal/e2e/e2e_test.go`):**
   - `TestE2EHealthCheck`: Validates `/health` system diagnostics.
   - `TestE2EIdentityAndRBAC`: Validates login, JWT issuance, `/me` profile claims, and unauthorized rejection.
   - `TestE2ECatalogContract`: Validates catalog filtering and POS PLU quick-keys.
@@ -316,11 +327,11 @@ go test -v ./...
   - `TestE2EPOSRetailJourneyAndIdempotency`: Validates POS sale checkout, catch-weight calculations, and offline retry idempotency without duplicate stock deduction.
   - `TestE2EInventoryBatchesAndStudioOverview`: Validates FEFO batch sorting, shrinkage write-off with row locking, and Studio live telemetry overview.
 - **Unit Tests:**
-  - `core/internal/modules/inventory/inventory_test.go`: FEFO sorting, stock reservation math, and reason code validation.
-  - `core/internal/modules/retail/retail_test.go`: Catch-weight scale gram-to-cent formula and cash drawer discrepancy reconciliation.
-  - `core/internal/modules/commerce/commerce_test.go`: Server-side subtotal/delivery calculation, payment transition state machine, restock vs spoilage write-off policy, and reservation sweeper timeout detection.
-  - `core/internal/middleware/auth_test.go`: JWT claims issuance, token verification, and RBAC matrix.
-  - `core/internal/database/integration_test.go`: PostgreSQL connection pool and ACID transaction rollback.
+  - `apps/core/internal/modules/inventory/inventory_test.go`: FEFO sorting, stock reservation math, and reason code validation.
+  - `apps/core/internal/modules/retail/retail_test.go`: Catch-weight scale gram-to-cent formula and cash drawer discrepancy reconciliation.
+  - `apps/core/internal/modules/commerce/commerce_test.go`: Server-side subtotal/delivery calculation, payment transition state machine, restock vs spoilage write-off policy, and reservation sweeper timeout detection.
+  - `apps/core/internal/middleware/auth_test.go`: JWT claims issuance, token verification, and RBAC matrix.
+  - `apps/core/internal/database/integration_test.go`: PostgreSQL connection pool and ACID transaction rollback on Port 1000.
 
 ---
 
@@ -328,7 +339,7 @@ go test -v ./...
 
 ### 1. Database Connection Issues
 - **Error:** `connect: connection refused` or `password authentication failed`.
-- **Solution:** Verify `DATABASE_URL` in `core/.env`. For local PostgreSQL, check your postgres username/password (e.g. `postgres://postgres:admin@localhost:5432/berryfresh_db?sslmode=disable`). Ensure `berryfresh_db` database exists.
+- **Solution:** Verify `DATABASE_URL` in `apps/core/.env`. PostgreSQL berjalan di port 1000: `postgres://postgres:admin@localhost:1000/berryfresh_db?sslmode=disable`. Pastikan database `berryfresh_db` sudah dibuat menggunakan `setup-db.bat` atau `setup-db.ps1`.
 
 ### 2. RabbitMQ Refused Connection in Local Development
 - **Log Notice:** `[Outbox] RabbitMQ connection notice (dial tcp [::1]:5672: connectex: ...). Events will be queued in PostgreSQL outbox.`
@@ -336,7 +347,7 @@ go test -v ./...
 
 ### 3. CORS Configuration
 - **Error:** `CORS header 'Access-Control-Allow-Origin' missing` or `When 'AllowCredentials' is set to true, 'AllowOrigins' cannot contain wildcard '*'`.
-- **Solution:** `core/internal/middleware/cors.go` explicitly allows origins `http://localhost:3000`, `http://localhost:3001`, `http://localhost:3002`, `http://localhost:5173` while supporting additional origins configured via `CORS_ALLOW_ORIGINS`.
+- **Solution:** `apps/core/internal/middleware/cors.go` explicitly allows origins `http://localhost:3000`, `http://localhost:3001`, `http://localhost:3002`, `http://localhost:5173` while supporting additional origins configured via `CORS_ALLOW_ORIGINS`.
 
 ---
 
