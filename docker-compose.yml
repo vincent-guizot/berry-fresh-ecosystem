@@ -1,0 +1,168 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: berryfresh_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-berry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fresh_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-berryfresh_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U berry -d berryfresh_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: berryfresh_rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: berryfresh_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: berryfresh_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: berryfresh_core
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      APP_NAME: Berry Fresh Core
+      APP_ENV: production
+      APP_PORT: "8080"
+      DATABASE_URL: postgres://berry:fresh_secret@postgres:5432/berryfresh_db?sslmode=disable
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: berryfresh.events
+      REDIS_URL: redis://redis:6379/0
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-berryfresh_jwt_access_secret_2026_super_secure_key}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-berryfresh_jwt_refresh_secret_2026_super_secure_key}
+      CORS_ALLOW_ORIGINS: "*"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  core-worker:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: berryfresh_worker
+    restart: always
+    command: ["/app/worker"]
+    depends_on:
+      core:
+        condition: service_healthy
+    environment:
+      APP_NAME: Berry Fresh Worker
+      APP_ENV: production
+      DATABASE_URL: postgres://berry:fresh_secret@postgres:5432/berryfresh_db?sslmode=disable
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_EXCHANGE: berryfresh.events
+
+  shop:
+    build:
+      context: ./shop
+      dockerfile: Dockerfile
+    container_name: berryfresh_shop
+    restart: always
+    depends_on:
+      core:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_CORE_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+
+  studio:
+    build:
+      context: ./studio
+      dockerfile: Dockerfile
+    container_name: berryfresh_studio
+    restart: always
+    ports:
+      - "3001:3001"
+
+  pos:
+    build:
+      context: ./pos
+      dockerfile: Dockerfile
+    container_name: berryfresh_pos
+    restart: always
+    ports:
+      - "3002:3002"
+
+  articles-api:
+    build:
+      context: ./articles/server
+      dockerfile: Dockerfile
+    container_name: berryfresh_articles_api
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      PORT: "5000"
+      MONGODB_URI: mongodb://mongodb:27017/berryfresh_articles
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+
+  articles-ui:
+    build:
+      context: ./articles/ui
+      dockerfile: Dockerfile
+    container_name: berryfresh_articles_ui
+    restart: always
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  mongo_data:
