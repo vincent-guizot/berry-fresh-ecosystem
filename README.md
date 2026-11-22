@@ -103,7 +103,7 @@ Once running, access:
 
 #### 2. Setup PostgreSQL Database & Migrations
 
-Anda dapat membuat database, menjalankan 8 skrip migrasi, dan mengisi data awal cukup dengan menjalankan script 1-klik:
+Anda dapat membuat database, menjalankan 9 skrip migrasi, dan mengisi data awal cukup dengan menjalankan script 1-klik:
 ```bash
 # Jalankan via Windows Command Prompt / Explorer:
 setup-db.bat
@@ -115,7 +115,7 @@ setup-db.bat
 cd core && go run ./cmd/seed/main.go
 ```
 
-Script ini otomatis memigrasikan 16 skema domain dan mengimpor **18 data seeder JSON** dari folder [`core/seeds/`](core/seeds/):
+Script ini otomatis memigrasikan 16 skema domain (migrasi `000001` hingga `000009`), mengonfigurasi constraint lifecycle order & refund, serta mengimpor **18 data seeder JSON** dari folder [`core/seeds/`](core/seeds/):
 
 | No | File Seeder JSON | Target Tabel Domain | Keterangan Data Awal |
 |---|---|---|---|
@@ -255,13 +255,25 @@ CORS_ALLOW_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:
 - `POST /api/v1/retail/sales/checkout`: Atomic checkout with server-side 11% PPN calculation, FEFO store stock deduction, receipt record, and **idempotency guard** on `receipt_number`.
 - `GET /api/v1/retail/sales/qris/generate`: Dynamic QRIS string and QR code generator for Indonesian retail standard payments.
 
-### 6. Commerce (Shop E-Commerce)
-- `POST /api/v1/commerce/orders/checkout`: Validates items, calculates server-side subtotal and Rp 25.000 cold courier fee, performs warehouse FEFO reservation in `inventory.stock_reservations`, generates Dynamic QRIS / BCA Virtual Account. Cart is never emptied before confirmed 201 Created order persistence.
-- `POST /api/v1/commerce/orders/:id/pay`: Confirms payment, commits stock reservation, permanently deducts warehouse balances, appends `inventory.stock_movements`, transitions order to `PAID`, and triggers `order.paid` outbox event.
-- `GET /api/v1/commerce/orders/:orderNumber`: Customer order tracking and delivery status.
+### 6. Commerce & Order Lifecycle (Shop E-Commerce)
+- `GET /api/v1/commerce/orders`: Query daftar pesanan e-commerce dengan filter status (`PENDING_PAYMENT`, `PAID`, `PACKING`, `IN_TRANSIT`, `DELIVERED`, `CANCELLED`, `REFUNDED`), pencarian (nama pelanggan, nomor telepon, nomor pesanan), dan pagination.
+- `POST /api/v1/commerce/orders/checkout`: Validates items, calculates server-side subtotal and Rp 25.000 cold courier fee, performs warehouse FEFO reservation in `inventory.stock_reservations` (held for 30 mins), and generates Dynamic QRIS / BCA Virtual Account. Cart is never emptied before confirmed 201 Created order persistence.
+- `POST /api/v1/commerce/orders/:id/pay`: Confirms payment, commits stock reservation, permanently deducts warehouse balances, appends `inventory.stock_movements`, transitions order to `PAID`, and triggers `payment.success` outbox event.
+- `POST /api/v1/commerce/orders/:id/cancel`: Pembatalan pesanan yang belum dibayar (`PENDING_PAYMENT`), melepaskan alokasi reservasi stok (`RELEASED`), dan memulihkan kuantitas `quantity_reserved_base` ke gudang.
+- `POST /api/v1/commerce/orders/:id/refund`: Pengembalian dana untuk pesanan yang sudah dibayar (`PAID`). Mendukung opsi perlakuan stok:
+  - `restock: true` $\rightarrow$ Mengembalikan saldo fisik ke lot batch asal dan gudang dengan mutasi ledger `RETURN`.
+  - `restock: false` $\rightarrow$ Menjaga standar keamanan pangan cold-chain; dicatat sebagai susut/rusak (`SPOILAGE` movement) tanpa menambah stok on-hand aktif.
+- `PATCH /api/v1/commerce/orders/:id/fulfillment`: Pembaruan status fulfillment rantai dingin: `PAID` $\rightarrow$ `PACKING` (pengemasan cold-pack 2°C) $\rightarrow$ `IN_TRANSIT` (kurir pendingin berangkat) $\rightarrow$ `DELIVERED` (selesai diterima).
+- `GET /api/v1/commerce/orders/:orderNumber`: Customer order tracking and delivery status lengkap dengan item buah yang dipesan, rincian lot panen FEFO, dan audit refund.
 
 ### 7. Analytics & Studio Dashboard
 - `GET /api/v1/analytics/overview`: Real-time executive metrics: gross sales today, channel breakdown (POS, E-Commerce, Manual B2B), active batches count, cold storage hub temperature (2.1°C), shrinkage percentage, and outbox queue metrics.
+- **Tab Orders & Fulfillment di Studio:** Antarmuka operasional admin dan gudang untuk memantau status pesanan online, mengorkestrasi pengiriman kurir pendingin, dan memproses refund interaktif.
+- **Halaman Pelacakan Pesanan di Shop (`/track`):** Halaman customer self-service untuk melacak status pesanan secara real-time, melihat timeline rantai dingin 2°C, dan membatalkan pesanan unpaid.
+
+### 8. FEFO Stock Reservation Background Sweeper
+- **Automatic Expiration Goroutine:** Core API menjalankan sweeper background berkala (interval 1 menit) untuk mendeteksi reservasi yang lewat waktu 30 menit (`expires_at < NOW() AND status = 'ACTIVE'`).
+- Sweeper otomatis membebaskan kuantitas tertahan dari `inventory.stock_balances`, menandai status reservasi `RELEASED`, mengubah order menjadi `CANCELLED`, serta memicu event outbox `order.expired`.
 
 ---
 
@@ -300,12 +312,13 @@ go test -v ./...
   - `TestE2EIdentityAndRBAC`: Validates login, JWT issuance, `/me` profile claims, and unauthorized rejection.
   - `TestE2ECatalogContract`: Validates catalog filtering and POS PLU quick-keys.
   - `TestE2ECommerceJourney`: Validates customer order checkout with server-side totals, FEFO reservations, and payment status lifecycle.
+  - `TestE2E_OrderLifecycle_Cancel_Fulfillment_Refund`: Validates full lifecycle: unpaid order cancellation with reservation release, cold-chain fulfillment transitions (`PACKING` -> `IN_TRANSIT` -> `DELIVERED`), refund with physical lot restocking and ledger auditing, and orders listing.
   - `TestE2EPOSRetailJourneyAndIdempotency`: Validates POS sale checkout, catch-weight calculations, and offline retry idempotency without duplicate stock deduction.
   - `TestE2EInventoryBatchesAndStudioOverview`: Validates FEFO batch sorting, shrinkage write-off with row locking, and Studio live telemetry overview.
 - **Unit Tests:**
   - `core/internal/modules/inventory/inventory_test.go`: FEFO sorting, stock reservation math, and reason code validation.
   - `core/internal/modules/retail/retail_test.go`: Catch-weight scale gram-to-cent formula and cash drawer discrepancy reconciliation.
-  - `core/internal/modules/commerce/commerce_test.go`: Server-side subtotal/delivery calculation and payment transition state machine.
+  - `core/internal/modules/commerce/commerce_test.go`: Server-side subtotal/delivery calculation, payment transition state machine, restock vs spoilage write-off policy, and reservation sweeper timeout detection.
   - `core/internal/middleware/auth_test.go`: JWT claims issuance, token verification, and RBAC matrix.
   - `core/internal/database/integration_test.go`: PostgreSQL connection pool and ACID transaction rollback.
 
