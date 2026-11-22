@@ -42,6 +42,10 @@ func main() {
 	outboxSvc.StartWorker(ctx, 3*time.Second)
 	defer outboxSvc.Close()
 
+	// Initialize FEFO Stock Reservation Background Sweeper
+	reservationSweeper := commerce.NewReservationSweeper(db, outboxSvc)
+	reservationSweeper.Start(ctx, 1*time.Minute)
+
 	// Fiber v3 Application
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
@@ -105,8 +109,12 @@ func main() {
 
 	// 5. Commerce E-Commerce Routes
 	comm := api.Group("/commerce")
+	comm.Get("/orders", commerceHandler.GetOrders)
 	comm.Post("/orders/checkout", commerceHandler.CheckoutOrder)
 	comm.Post("/orders/:id/pay", commerceHandler.PayOrder)
+	comm.Post("/orders/:id/cancel", commerceHandler.CancelOrder)
+	comm.Post("/orders/:id/refund", commerceHandler.RefundOrder)
+	comm.Patch("/orders/:id/fulfillment", commerceHandler.UpdateFulfillment)
 	comm.Get("/orders/:orderNumber", commerceHandler.GetOrderByNumber)
 
 	// 6. Analytics & Dashboard Telemetry Routes
