@@ -15,6 +15,7 @@ import {
   AlertCircle,
   RefreshCw,
   Copy,
+  XCircle,
 } from 'lucide-react';
 import { CORE_API_URL } from '../../lib/api';
 
@@ -38,6 +39,34 @@ export default function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [orderCancelled, setOrderCancelled] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelOrder = async () => {
+    if (!orderConfirmed) return;
+    if (!confirm('Apakah Anda yakin ingin membatalkan pesanan ini? Alokasi reservasi FEFO akan dibebaskan kembali.')) {
+      return;
+    }
+    try {
+      setCancelling(true);
+      const res = await fetch(`${CORE_API_URL}/api/v1/commerce/orders/${orderConfirmed.order_id || orderConfirmed.order_number}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Dibatalkan oleh pelanggan di halaman checkout' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrderCancelled(true);
+      } else {
+        alert(data.message || 'Gagal membatalkan pesanan.');
+      }
+    } catch (err) {
+      console.error('Cancel order error:', err);
+      alert('Terjadi kesalahan jaringan saat membatalkan pesanan.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,24 +182,37 @@ export default function CheckoutPage() {
           <div className="flex items-center justify-center gap-1.5 pt-2">
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold ${
-                paymentSuccess
+                orderCancelled
+                  ? 'bg-rose-100 text-rose-800'
+                  : paymentSuccess
                   ? 'bg-emerald-100 text-emerald-800'
                   : 'bg-amber-100 text-amber-800 animate-pulse'
               }`}
             >
-              Status: {paymentSuccess ? 'PAID • RESERVATIONS COMMITTED' : 'PENDING PAYMENT (30 min)'}
+              Status: {orderCancelled ? 'CANCELLED • RESERVATIONS RELEASED' : paymentSuccess ? 'PAID • RESERVATIONS COMMITTED' : 'PENDING PAYMENT (30 min)'}
             </span>
           </div>
 
-          {!paymentSuccess && (
-            <button
-              onClick={handleConfirmPayment}
-              disabled={paying}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow"
-            >
-              {paying ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-              <span>Simulate Instant Payment Confirmation</span>
-            </button>
+          {!paymentSuccess && !orderCancelled && (
+            <div className="space-y-2">
+              <button
+                onClick={handleConfirmPayment}
+                disabled={paying || cancelling}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow"
+              >
+                {paying ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                <span>Simulate Instant Payment Confirmation</span>
+              </button>
+
+              <button
+                onClick={handleCancelOrder}
+                disabled={paying || cancelling}
+                className="w-full py-2 bg-gray-100 hover:bg-rose-50 hover:text-rose-700 text-gray-600 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 border border-gray-200"
+              >
+                {cancelling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                <span>Batalkan Pesanan (Release Hold)</span>
+              </button>
+            </div>
           )}
 
           <div className="p-3 bg-emerald-50 rounded-xl text-left border border-emerald-100 text-xs text-emerald-900 flex items-start gap-2">
@@ -181,12 +223,20 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <Link
-          href="/"
-          className="inline-block px-6 py-3 bg-berry-red text-white text-xs font-bold rounded-xl shadow hover:bg-berry-red/90 transition"
-        >
-          Return to Home
-        </Link>
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            href={`/track?order=${orderConfirmed.order_number}`}
+            className="inline-flex items-center gap-1.5 px-6 py-3 bg-berry-charcoal text-white text-xs font-bold rounded-xl shadow hover:bg-black transition"
+          >
+            <span>Lacak Status Pesanan</span>
+          </Link>
+          <Link
+            href="/"
+            className="inline-block px-6 py-3 bg-berry-red text-white text-xs font-bold rounded-xl shadow hover:bg-berry-red/90 transition"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     );
   }
