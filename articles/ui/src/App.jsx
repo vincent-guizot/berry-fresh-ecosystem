@@ -19,7 +19,7 @@ import ArticleCard from './components/ArticleCard';
 import ArticleReaderModal from './components/ArticleReaderModal';
 import NewArticleModal from './components/NewArticleModal';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta.env?.VITE_ARTICLES_API_URL) || 'http://localhost:5000/api';
 
 const DEFAULT_ARTICLES = [
   {
