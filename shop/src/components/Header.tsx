@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useCart } from '../lib/cartContext';
-import { ShoppingBag, ThermometerSnowflake, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, ThermometerSnowflake, ShieldCheck, Truck } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { totalItems } = useCart();
@@ -30,6 +30,10 @@ export const Header: React.FC = () => {
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-berry-charcoal">
           <Link href="/catalog" className="hover:text-berry-red transition">Fresh Catalog</Link>
+          <Link href="/track" className="hover:text-berry-red transition flex items-center gap-1">
+            <Truck className="w-3.5 h-3.5 text-berry-red" />
+            <span>Lacak Pesanan</span>
+          </Link>
           <Link href="/#coldchain" className="hover:text-berry-red transition flex items-center gap-1">
             <ThermometerSnowflake className="w-3.5 h-3.5 text-cyan-600" />
             <span>2°C Cold Chain</span>
