@@ -12,6 +12,7 @@ import (
 	"berryfresh/core/internal/config"
 	"berryfresh/core/internal/database"
 	"berryfresh/core/internal/middleware"
+	"berryfresh/core/internal/modules/analytics"
 	"berryfresh/core/internal/modules/catalog"
 	"berryfresh/core/internal/modules/commerce"
 	"berryfresh/core/internal/modules/identity"
@@ -28,22 +29,25 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Connect PostgreSQL (Neon)
+	// Connect PostgreSQL (Neon / Local)
 	db, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Printf("[Main] Warning: DB error: %v", err)
 	}
 	defer db.Close()
 
-	// Initialize Transactional Outbox
+	// Initialize Transactional Outbox with RabbitMQ
 	var outboxPool = db.Pool
-	outboxSvc := outbox.NewOutboxService(outboxPool)
+	outboxSvc := outbox.NewOutboxService(outboxPool, cfg.RabbitMQURL, cfg.RabbitMQExchange)
 	outboxSvc.StartWorker(ctx, 3*time.Second)
+	defer outboxSvc.Close()
 
 	// Fiber v3 Application
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
 		ServerHeader: "Berry-Fresh-Core/1.0",
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 	})
 
 	// Global Middlewares
@@ -52,13 +56,13 @@ func main() {
 	// Health Check
 	app.Get("/health", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status":            "healthy",
-			"app_name":          cfg.AppName,
-			"environment":       cfg.AppEnv,
-			"database_ready":    db.IsConnected(),
-			"outbox_active":     true,
-			"timestamp":         time.Now().Format(time.RFC3339),
-			"version":           "1.0.0",
+			"status":         "healthy",
+			"app_name":       cfg.AppName,
+			"environment":    cfg.AppEnv,
+			"database_ready": db.IsConnected(),
+			"outbox_active":  true,
+			"timestamp":      time.Now().Format(time.RFC3339),
+			"version":        "1.0.0",
 		})
 	})
 
@@ -68,6 +72,7 @@ func main() {
 	inventoryHandler := inventory.NewInventoryHandler(db, outboxSvc)
 	retailHandler := retail.NewRetailHandler(db, outboxSvc)
 	commerceHandler := commerce.NewCommerceHandler(db, outboxSvc)
+	analyticsHandler := analytics.NewAnalyticsHandler(db)
 
 	// API v1 Routing
 	api := app.Group("/api/v1")
@@ -75,7 +80,7 @@ func main() {
 	// 1. Identity & Auth Routes
 	auth := api.Group("/auth")
 	auth.Post("/login", authHandler.Login)
-	auth.Get("/me", middleware.RequireAuth(cfg.JWTAccessSecret), authHandler.Me)
+	auth.Get("/me", authHandler.Me, middleware.RequireAuth(cfg.JWTAccessSecret))
 
 	// 2. Master Catalog Routes
 	cat := api.Group("/catalog")
@@ -86,11 +91,13 @@ func main() {
 	// 3. Inventory & Batches (FEFO)
 	inv := api.Group("/inventory")
 	inv.Get("/batches", inventoryHandler.GetBatches)
+	inv.Get("/balances", inventoryHandler.GetBalances)
 	inv.Post("/adjustments", inventoryHandler.RecordAdjustment)
 
 	// 4. Retail POS Routes
 	ret := api.Group("/retail")
 	ret.Get("/shifts/current", retailHandler.GetCurrentShift)
+	ret.Get("/shifts/history", retailHandler.GetShiftHistory)
 	ret.Post("/shifts/open", retailHandler.OpenShift)
 	ret.Post("/shifts/close", retailHandler.CloseShift)
 	ret.Post("/sales/checkout", retailHandler.CheckoutSale)
@@ -100,13 +107,18 @@ func main() {
 	comm := api.Group("/commerce")
 	comm.Post("/orders/checkout", commerceHandler.CheckoutOrder)
 	comm.Post("/orders/:id/pay", commerceHandler.PayOrder)
+	comm.Get("/orders/:orderNumber", commerceHandler.GetOrderByNumber)
+
+	// 6. Analytics & Dashboard Telemetry Routes
+	anl := api.Group("/analytics")
+	anl.Get("/overview", analyticsHandler.GetOverview)
 
 	// Graceful Shutdown
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.AppPort)
 		log.Printf("🍓 Berry Fresh Core API starting on http://localhost%s", addr)
 		if err := app.Listen(addr); err != nil {
-			log.Fatalf("Server shutdown error: %v", err)
+			log.Printf("[Server] Terminating listener: %v", err)
 		}
 	}()
 
